@@ -1,0 +1,388 @@
+#app {
+    text-align: center;
+  }
+
+  .skill-tree {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-y: scroll;
+    margin: 30px;
+    height: calc(100vh - 260px);
+    position: absolute;
+    bottom: 40px;
+    width: calc(100vw - 60px);
+    /* margin: 20px; */
+  }
+
+  .skill-tree::-webkit-scrollbar-thumb {
+background: #ffa500;
+border-radius: 10px;
+/* box-shadow: 0 0 10px #ffa500, 0 0 20px #ffa500, 0 0 30px #ffa500, 0 0 40px #ffa500; */
+}
+.skill-tree::-webkit-scrollbar {
+width: 3px;
+height: 3px;
+}
+
+/* Handle on hover */
+.skill-tree::-webkit-scrollbar-thumb:hover {
+background: #ff8800;
+}
+
+  .skill {
+    position: relative;
+    /* margin-left:20px; */
+    /* margin: 10px; */
+  }
+
+  .skill > div {
+    /* background-color: #080809f2; */
+    /* padding: 10px; */
+    border-radius: 2px;
+    cursor: pointer;
+    font-family: 'Rocher', serif;
+  }
+
+  .line {
+    position: absolute;
+    padding: 2px;
+    height: 6px;
+    background-color: #ffa500;
+    box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.9);
+    left: 100%;
+    transform-origin: 0 50%;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .buttonStandard{
+    /* outline: 2px solid red; */
+
+    box-shadow: 0 19px 38px rgba(0,0,0,0.70), 0 15px 12px rgba(0,0,0,0.22);
+  opacity: 1;
+  /* width: 370px; */
+  border-radius: 7px;
+  text-align: center;
+  /* padding: 14px; */
+  /* margin-top: 40px; */
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-family: 'Rocher';
+  background-color: rgba(0, 0, 0, 0.819);
+  }
+
+  .skillBackground{
+    box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+    opacity: 1;
+    border-radius: 7px;
+    text-align: center;
+    /* padding: 14px; margin-top: 40px; */
+     margin-left: auto;margin-right: auto;
+  }
+
+
+  /* .tooltip {
+  position: absolute;
+  font-family: 'Courier New', monospace;
+  font-size: 20px;
+  background-color: #080809f2;
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.83);
+  padding: 40px;
+  margin-top: 20px;
+  margin-bottom: 50px;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  color: #d89b4a;
+  border-radius: 2px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  visibility: hidden;
+}
+
+.skill:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+} */
+
+.skillName {
+    font-family: 'Rocher';
+    text-align: left;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.skillDescription {
+    text-align: left;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.skillDamage {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    text-align: left;
+    font-family: 'Rocher';
+}
+
+.skill-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Adjust the number of columns as needed */
+    gap: 20px; /* Adjust the gap between skills */
+    max-width: 200px;
+}
+
+.tooltip p {
+    margin: 0; /* Remove default margins for better positioning */
+}
+
+/* Ensure the tooltip text doesn't overflow its container */
+.tooltip p {
+    max-width: 100%;
+}
+
+/* Adjust tooltip position based on viewport boundaries */
+.tooltip.left {
+    transform: translateX(-100%);
+}
+
+.tooltip.right {
+    left: auto;
+}
+
+.tooltip.bottom {
+    transform: translateY(-100%);
+}
+
+.tooltip.top {
+    bottom: auto;
+}
+
+
+
+.tooltip {
+    position: fixed;
+    /* position: absolute !important; */
+    top: 0px;
+    left: 0px;
+    /* width: 100%; */
+    /* background-color: #fff; */
+    /* border: 1px solid #ccc; */
+    /* padding: 10px; */
+    /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); */
+    z-index: 1000;
+
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    background-color: #080809f2;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.83);
+    padding: 40px;
+    margin-top: 20px;
+    margin-bottom: 50px;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    color: #d89b4a;
+    border-radius: 2px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip-container:hover .tooltip {
+    opacity: 1;
+  }
+
+.tooltip::-webkit-scrollbar-thumb {
+    background: #ffa500;
+    border-radius: 10px;
+    /* box-shadow: 0 0 10px #ffa500, 0 0 20px #ffa500, 0 0 30px #ffa500, 0 0 40px #ffa500; */
+}
+
+.tooltip::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+}
+
+.loading-spinner {
+    /* Add your spinner styling here */
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    .skill-tree {
+      height: calc(100vh - 310px);
+    }
+  }
+
+  body {
+/* You can apply the background image to the body element or any other element of your choice */
+background-image: url('https://cdna.artstation.com/p/assets/images/images/067/572/952/large/james-b-backgrounds.jpg?1695695547');
+/* You can also specify additional properties to control the background image, such as its size, position, and repetition */
+background-size: 100% 100%;
+background-position: center center;
+background-repeat: no-repeat;
+/* Optional: You can set a background color in case the image is not available or hasn't loaded yet */
+background-color: #f0f0f0;
+/* Optional: You can set a fixed height for the body if needed */
+height: 100vh;
+/* Optional: You can set a fixed width for the body if needed */
+width: 100vw;
+/* Optional: This ensures that the body takes up the full height of the viewport */
+margin: 0;
+overflow: hidden;
+}
+
+
+  /* FONT */
+  @font-face {
+  font-family: 'Rocher';
+  src: url(https://assets.codepen.io/9632/RocherColorGX.woff2);
+}
+
+.title {
+  font-family: 'Rocher';
+  font-size: 50px;
+}
+
+.title {
+  margin: 0;
+}
+
+@font-palette-values --Grays {
+  font-family: Rocher;
+  base-palette: 9;
+}
+
+@font-palette-values --Purples {
+  font-family: Rocher;
+  base-palette: 6;
+}
+
+@font-palette-values --Mint {
+  font-family: Rocher;
+  base-palette: 7;
+}
+
+.grays {
+  font-palette: --Grays;
+}
+
+.purples {
+  font-palette: --Purples;
+}
+
+.mint {
+  font-palette: --Mint;
+}
+
+.lds-ripple {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.lds-ripple div {
+  position: absolute;
+  border: 4px solid #fff;
+  opacity: 1;
+  border-radius: 50%;
+  animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.lds-ripple div:nth-child(2) {
+  animation-delay: -0.5s;
+}
+@keyframes lds-ripple {
+  0% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 0;
+  }
+  4.9% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 0;
+  }
+  5% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    top: 0px;
+    left: 0px;
+    width: 72px;
+    height: 72px;
+    opacity: 0;
+  }
+}
+
+  h1, h2, h3, h4, h5, h6 {
+  font-family: 'Rocher', serif;
+}
+
+.tooltip-container img {
+width: 40px; height: 40px;
+}
+
+
+/* large style*/
+/*h1 {*/
+/*     font-size: 50px;*/
+/*}*/
+
+/*.skill-tree {*/
+/*height: calc(100vh - 500px);*/
+/*  bottom: 64px;*/
+
+/*}*/
+
+/*.buttonStandard {*/
+/*    font-size: 21px;*/
+/*}*/
+
+/*.class {*/
+/*    font-size: 25px;*/
+/*}*/
+
+/*.skill-container {*/
+/*    gap: 30px;*/
+/*  max-width: 316px;*/
+/*}*/
+
+/*.tooltip-container img {*/
+/*    width: 64px;*/
+/*    height: 64px;*/
+/*}*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
