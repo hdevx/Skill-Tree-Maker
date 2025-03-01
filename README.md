@@ -16,6 +16,9 @@ Run a local server. No build step, no npm needed.
 Works with any static file server, like VSCode Live Server extension.
 Root directory should have index.html.
 
+if you have npx and browser-sync:
+`npx browser-sync start --server --files "index.html"`
+
 # Tests
 Setup in progress, using default Playwright.
 
