@@ -2497,6 +2497,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
                                 this.redo();
                             }
                         }
+                        else if (event.key === "c") {
+                            event.preventDefault();
+                            this.copy();
+                        }
+                        else if (event.key === "v") {
+                            event.preventDefault();
+                            this.paste();
+                        }
                     }
                 },
                 loadDefaultConfig() {
@@ -4331,8 +4339,55 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     document.removeEventListener('mousemove', this.handleSelection);
                     document.removeEventListener('mouseup', this.stopSelection);
                     // Keep the selection but remove the box
-                }
+                },
 
+                copy() {
+                    // It seems like this.selectedSkills cannot be accessed here.
+                    // Possibly due to a scope issue.
+
+                    const selectedSkills = this.skills.filter(
+                        (skill) => skill.showActions
+                    );
+
+                    if (selectedSkills.length === 0) {
+                        return;
+                    } else {
+                        this.clipboard = selectedSkills;
+                    }
+
+                    console.log("Copied nodes:", this.clipboard);
+                },
+
+                paste() {
+                    // append "copy" to the skill name
+                    // adjust positions by a small offset so they are not perfectly overlapping
+                    // add nodes from clipboard to the state
+                    // update the selected nodes to be the newly pasted ones
+
+                    if (this.clipboard.length === 0) {
+                        return;
+                    }
+
+                    // Deep copy the clipboard nodes
+                    const copiedNodes = JSON.parse(JSON.stringify(this.clipboard));
+                    const offsetX = 20;
+                    const offsetY = 20;
+
+                    // Update copied nodes
+                    copiedNodes.forEach((node) => {
+                        node.id = ++this.skillIdCounter;
+                        node.x += offsetX;
+                        node.y += offsetY;
+                        node.showActions = true;
+                        node.shouldAnimate = true;
+                        node.name += " copy";
+                    });
+
+                    // Add copied nodes to the state
+                    this.selectedSkills = copiedNodes;
+                    this.skills.push(...copiedNodes);
+                    this.saveToHistory();
+                },
 
             }
         }).mount('#app')
