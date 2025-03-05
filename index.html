@@ -2572,2321 +2572,2347 @@ input[type="range"]::-webkit-slider-thumb:hover {
     </div>
 
     <script>
-            const { createApp } = Vue;
+      const { createApp } = Vue;
 
-            // Global configuration object
-            const CONFIG = {
-              paths: {
-                assets: "/src/app/assets",
-                config: "/src/app/config",
-                images: {
-                  skills: "/img/skill",
-                  backgrounds: "/img/background",
-                  default: "/img/skill/axe-hammer-grey.png",
-                },
-              },
-              grid: {
-                spacing: 150,
-                startX: 100,
-                startY: 100,
-              },
-              skill: {
-                size: 100, // diameter of skill circle
-                offset: 30, // half of size, used for centering
-              },
-              connection: {
-                height: 2, // Default connection height
-              },
-              skillImages: [
-                "/axe-hammer-grey.png",
-                "/fire-orb.png",
-                "/fire-rock.png",
-                "/flaming-spear.png",
-                "/flaming-staff.png",
-                "/golden-arrow.png",
-                "/gray-spear.png",
-                "/ornate-spear.png",
-                "/skull-blue.png",
-                "/small-trident.png",
-                "/spectral-dagger.png",
-                "/water-sword.png",
-              ],
+      // Global configuration object
+      const CONFIG = {
+        paths: {
+          assets: "/src/app/assets",
+          config: "/src/app/config",
+          images: {
+            skills: "/img/skill",
+            backgrounds: "/img/background",
+            default: "/img/skill/axe-hammer-grey.png",
+          },
+        },
+        grid: {
+          spacing: 150,
+          startX: 100,
+          startY: 100,
+        },
+        skill: {
+          size: 100, // diameter of skill circle
+          offset: 30, // half of size, used for centering
+        },
+        connection: {
+          height: 2, // Default connection height
+        },
+        skillImages: [
+          "/axe-hammer-grey.png",
+          "/fire-orb.png",
+          "/fire-rock.png",
+          "/flaming-spear.png",
+          "/flaming-staff.png",
+          "/golden-arrow.png",
+          "/gray-spear.png",
+          "/ornate-spear.png",
+          "/skull-blue.png",
+          "/small-trident.png",
+          "/spectral-dagger.png",
+          "/water-sword.png",
+        ],
+      };
+
+      createApp({
+        data() {
+          return {
+            config: CONFIG, // Make config available in template
+            skills: [],
+            connections: [],
+            connectingFrom: null,
+            skillIdCounter: 0,
+            draggedSkill: null,
+            dragOffset: { x: 0, y: 0 },
+            draggedElement: null,
+            isDragging: false,
+            isLinking: false,
+            hoveredSkill: null,
+            defaultMaxPoints: 5, // Add this default value
+            dragStartTime: null,
+            dragStartPos: null,
+            dragThreshold: 5, // pixels of movement to consider it a drag
+            showOptions: false,
+            isPanning: false,
+            panStart: { x: 0, y: 0 },
+            treePosition: { x: 0, y: 0 },
+            scale: 1,
+            minScale: 0.5,
+            maxScale: 2,
+            scaleStep: 0.1,
+            isLoaded: false,
+            touchStartX: null,
+            touchStartY: null,
+            lastTouchDistance: null,
+            touchTimeout: null,
+            doubleTapDelay: 300, // milliseconds
+            lastTap: 0,
+            editingSkill: null,
+            oldSkills: null,
+            oldBackgroundLink: null,
+            oldName: null,
+            currentBackgroundLink: null,
+            currentName: null,
+            currentClassDescription: null,
+            inputText: "",
+            isLoading: false,
+            history: [],
+            historyIndex: -1,
+            maxHistorySize: 50,
+            showImageSelector: false,
+            selectedImage: null,
+            availableImages: CONFIG.skillImages,
+            skillShape: "round",
+            customImages: [],
+            gridSnapEnabled: true, // Add this new property
+            snapThreshold: 8,
+            mode: "edit",
+            overlayColor: "#000000",
+            overlayOpacity: 50,
+            showArrows: true,
+            showGlobalGrid: false,
+            gridOpacity: 12,
+            gridSize: window.innerWidth <= 768 ? 80 : 240, // Default grid size based on screen width
+            maxPoints: 20, // Default max points
+            selectionBox: null,
+            selectedSkills: [],
+            initialClick: { x: 0, y: 0 },
+            showLoadModal: false,
+            loadedData: null,
+            recentBackgrounds: JSON.parse(
+              localStorage.getItem("recentBackgrounds") || "[]"
+            ),
+            initialPositions: null,
+          };
+        },
+
+        computed: {
+          canUndo() {
+            return this.history.length >= 2 && this.historyIndex > 1;
+          },
+          canRedo() {
+            return this.historyIndex < this.history.length - 1;
+          },
+          allImages() {
+            // Convert default images to the same format as custom images
+            const defaultImages = this.availableImages.map((image) => ({
+              id: image,
+              src: this.config.paths.images.skills + image,
+              name: image,
+              isDefault: true,
+            }));
+
+            // Combine with custom images
+            return [...defaultImages, ...this.customImages];
+          },
+          gridStyle() {
+            return {
+              "--grid-opacity": this.gridOpacity / 100,
             };
+          },
 
-            createApp({
-              data() {
-                return {
-                  config: CONFIG, // Make config available in template
-                  skills: [],
-                  connections: [],
-                  connectingFrom: null,
-                  skillIdCounter: 0,
-                  draggedSkill: null,
-                  dragOffset: { x: 0, y: 0 },
-                  draggedElement: null,
-                  isDragging: false,
-                  isLinking: false,
-                  hoveredSkill: null,
-                  defaultMaxPoints: 5, // Add this default value
-                  dragStartTime: null,
-                  dragStartPos: null,
-                  dragThreshold: 5, // pixels of movement to consider it a drag
-                  showOptions: false,
-                  isPanning: false,
-                  panStart: { x: 0, y: 0 },
-                  treePosition: { x: 0, y: 0 },
-                  scale: 1,
-                  minScale: 0.5,
-                  maxScale: 2,
-                  scaleStep: 0.1,
-                  isLoaded: false,
-                  touchStartX: null,
-                  touchStartY: null,
-                  lastTouchDistance: null,
-                  touchTimeout: null,
-                  doubleTapDelay: 300, // milliseconds
-                  lastTap: 0,
-                  editingSkill: null,
-                  oldSkills: null,
-                  oldBackgroundLink: null,
-                  oldName: null,
-                  currentBackgroundLink: null,
-                  currentName: null,
-                  currentClassDescription: null,
-                  inputText: "",
-                  isLoading: false,
-                  history: [],
-                  historyIndex: -1,
-                  maxHistorySize: 50,
-                  showImageSelector: false,
-                  selectedImage: null,
-                  availableImages: CONFIG.skillImages,
-                  skillShape: "round",
-                  customImages: [],
-                  gridSnapEnabled: true, // Add this new property
-                  snapThreshold: 8,
-                  mode: "edit",
-                  overlayColor: "#000000",
-                  overlayOpacity: 50,
-                  showArrows: true,
-                  showGlobalGrid: false,
-                  gridOpacity: 12,
-                  gridSize: window.innerWidth <= 768 ? 80 : 240, // Default grid size based on screen width
-                  maxPoints: 20, // Default max points
-                  selectionBox: null,
-                  selectedSkills: [],
-                  initialClick: { x: 0, y: 0 },
-                  showLoadModal: false,
-                  loadedData: null,
-                  recentBackgrounds: JSON.parse(localStorage.getItem("recentBackgrounds") || "[]"),
-                  initialPositions: null,
+          gridLines() {
+            if (!this.showGlobalGrid) return [];
+
+            const lines = [];
+            const treeEl = document.querySelector(".talent-tree");
+            if (!treeEl) return lines;
+
+            const bounds = treeEl.getBoundingClientRect();
+            const size = parseInt(this.gridSize);
+
+            // Calculate the offset based on tree position
+            const offsetX = this.treePosition.x % size;
+            const offsetY = this.treePosition.y % size;
+
+            // Calculate number of lines needed
+            const numHorizontal = Math.ceil(bounds.height / size);
+            const numVertical = Math.ceil(bounds.width / size);
+
+            // Add horizontal lines
+            for (let i = 0; i <= numHorizontal; i++) {
+              lines.push({
+                id: `h${i}`,
+                type: "horizontal",
+                style: {
+                  top: `${i * size + offsetY}px`,
+                },
+              });
+            }
+
+            // Add vertical lines
+            for (let i = 0; i <= numVertical; i++) {
+              lines.push({
+                id: `v${i}`,
+                type: "vertical",
+                style: {
+                  left: `${i * size + offsetX}px`,
+                },
+              });
+            }
+
+            return lines;
+          },
+          totalPointsSpent() {
+            return this.skills.reduce(
+              (total, skill) => total + skill.currentPoints,
+              0
+            );
+          },
+        },
+        mounted() {
+          // Check if we're loading a specific tree
+          const match = window.location.pathname.match(/\/tree\/([^\/]+)/);
+          if (match) {
+            const treeId = match[1];
+            this.loadTreeById(treeId);
+          } else {
+            this.loadDefaultConfig();
+          }
+
+          // Add keyboard event listener
+          document.addEventListener("keydown", this.handleKeyboardShortcuts);
+
+          setTimeout(() => {
+            document.querySelector(".talent-tree").classList.add("loaded");
+            this.saveToHistory(); // Save initial state
+          }, 1000);
+
+          // Load custom images from localStorage
+          this.loadCustomImages();
+
+          this.mode =
+            new URLSearchParams(window.location.search).get("mode") || "edit";
+          document.body.classList.toggle("view-mode", this.mode === "view");
+
+          if (this.mode === "view") {
+            this.showGlobalGrid = false;
+          } else {
+            this.showGlobalGrid = true;
+          }
+        },
+        beforeUnmount() {
+          // Clean up event listener
+          document.removeEventListener("keydown", this.handleKeyboardShortcuts);
+        },
+        methods: {
+          handleKeyboardShortcuts(event) {
+            // Check if ctrl/cmd key is pressed
+            if (event.ctrlKey || event.metaKey) {
+              if (event.key === "z") {
+                event.preventDefault();
+                // Only allow undo when there are at least 2 states in history
+                if (this.history.length >= 2 && this.historyIndex > 0) {
+                  this.undo();
+                }
+              } else if (event.key === "y") {
+                event.preventDefault();
+                if (this.canRedo) {
+                  this.redo();
+                }
+              } else if (event.key === "c") {
+                event.preventDefault();
+                this.copy();
+              } else if (event.key === "v") {
+                event.preventDefault();
+                this.paste();
+              }
+            }
+          },
+          loadDefaultConfig() {
+            fetch(`${this.config.paths.config}/default.json`)
+              .then((response) => response.json())
+              .then((data) => {
+                this.skills = [];
+                this.connections = [];
+
+                // Set the initial class name and background
+                const isMobile = window.innerWidth <= 768;
+
+                // Set the initial class name and background
+                this.currentName = isMobile
+                  ? "Try Tapping A Skill"
+                  : "Try Generating a Class, or Clicking a Skill.";
+
+                this.currentBackgroundLink = data["Class Image"]
+                  ? `${this.config.paths.images.backgrounds}${data["Class Image"]}`
+                  : "/img/background/grass-ancient.jpg";
+
+                // First pass: Create a map of skill dependencies and levels
+                const skillLevels = new Map();
+                const skillDeps = new Map();
+
+                data.Skills.forEach((skill) => {
+                  const name = skill["Skill Name"];
+                  skillDeps.set(
+                    name,
+                    skill["Skill Prerequisite"] !== "-"
+                      ? skill["Skill Prerequisite"].split(" (")[0]
+                      : null
+                  );
+                });
+
+                // Calculate levels based on prerequisites
+                const calculateLevel = (skillName, visited = new Set()) => {
+                  if (visited.has(skillName)) return 0; // Handle circular dependencies
+                  visited.add(skillName);
+
+                  const prereq = skillDeps.get(skillName);
+                  if (!prereq) return 0;
+
+                  return 1 + calculateLevel(prereq, visited);
                 };
-              },
 
-              computed: {
-                canUndo() {
-                  return this.history.length >= 2 && this.historyIndex > 1;
-                },
-                canRedo() {
-                  return this.historyIndex < this.history.length - 1;
-                },
-                allImages() {
-                  // Convert default images to the same format as custom images
-                  const defaultImages = this.availableImages.map((image) => ({
-                    id: image,
-                    src: this.config.paths.images.skills + image,
-                    name: image,
-                    isDefault: true,
-                  }));
+                // Assign levels to all skills
+                data.Skills.forEach((skill) => {
+                  const level = calculateLevel(skill["Skill Name"]);
+                  skillLevels.set(skill["Skill Name"], level);
+                });
 
-                  // Combine with custom images
-                  return [...defaultImages, ...this.customImages];
-                },
-                gridStyle() {
-                  return {
-                    "--grid-opacity": this.gridOpacity / 100,
-                  };
-                },
-
-                gridLines() {
-                  if (!this.showGlobalGrid) return [];
-
-                  const lines = [];
-                  const treeEl = document.querySelector(".talent-tree");
-                  if (!treeEl) return lines;
-
-                  const bounds = treeEl.getBoundingClientRect();
-                  const size = parseInt(this.gridSize);
-
-                  // Calculate the offset based on tree position
-                  const offsetX = this.treePosition.x % size;
-                  const offsetY = this.treePosition.y % size;
-
-                  // Calculate number of lines needed
-                  const numHorizontal = Math.ceil(bounds.height / size);
-                  const numVertical = Math.ceil(bounds.width / size);
-
-                  // Add horizontal lines
-                  for (let i = 0; i <= numHorizontal; i++) {
-                    lines.push({
-                      id: `h${i}`,
-                      type: "horizontal",
-                      style: {
-                        top: `${i * size + offsetY}px`,
-                      },
-                    });
+                // Group skills by level
+                const skillsByLevel = new Map();
+                skillLevels.forEach((level, name) => {
+                  if (!skillsByLevel.has(level)) {
+                    skillsByLevel.set(level, []);
                   }
+                  skillsByLevel.get(level).push(name);
+                });
 
-                  // Add vertical lines
-                  for (let i = 0; i <= numVertical; i++) {
-                    lines.push({
-                      id: `v${i}`,
-                      type: "vertical",
-                      style: {
-                        left: `${i * size + offsetX}px`,
-                      },
-                    });
+                // Calculate positions
+                data.Skills = data.Skills.map((skill) => {
+                  if (!skill["Skill Position"]) {
+                    const level = skillLevels.get(skill["Skill Name"]);
+                    const skillsAtLevel = skillsByLevel.get(level);
+                    const indexAtLevel = skillsAtLevel.indexOf(
+                      skill["Skill Name"]
+                    );
+
+                    // Calculate grid position
+                    // Level determines x (column), index within level determines y (row)
+                    const x = level + 1; // Add 1 to avoid x=0
+                    const y = indexAtLevel + 1;
+
+                    skill["Skill Position"] = `(${x},${y})`;
                   }
+                  return skill;
+                });
 
-                  return lines;
-                },
-                totalPointsSpent() {
-                  return this.skills.reduce((total, skill) => total + skill.currentPoints, 0);
-                },
-              },
-              mounted() {
-                // Check if we're loading a specific tree
-                const match = window.location.pathname.match(/\/tree\/([^\/]+)/);
-                if (match) {
-                  const treeId = match[1];
-                  this.loadTreeById(treeId);
-                } else {
-                  this.loadDefaultConfig();
-                }
+                // Continue with existing positioning logic...
+                const viewport = {
+                  width: window.innerWidth,
+                  height: window.innerHeight,
+                };
 
-                // Add keyboard event listener
-                document.addEventListener("keydown", this.handleKeyboardShortcuts);
+                // Find bounds of the skill tree
+                let minX = Infinity,
+                  minY = Infinity,
+                  maxX = -Infinity,
+                  maxY = -Infinity;
 
-                setTimeout(() => {
-                  document.querySelector(".talent-tree").classList.add("loaded");
-                  this.saveToHistory(); // Save initial state
-                }, 1000);
+                // First pass: calculate bounds
+                data.Skills.forEach((skillData) => {
+                  const posMatch =
+                    skillData["Skill Position"].match(/\((\d+),\s*(\d+)\)/);
+                  const x = parseInt(posMatch[1]);
+                  const y = parseInt(posMatch[2]);
 
-                // Load custom images from localStorage
-                this.loadCustomImages();
+                  const gridX =
+                    this.config.grid.startX +
+                    (x - 1) * this.config.grid.spacing;
+                  const gridY =
+                    this.config.grid.startY +
+                    (y - 1) * this.config.grid.spacing;
 
-                this.mode = new URLSearchParams(window.location.search).get("mode") || "edit";
-                document.body.classList.toggle("view-mode", this.mode === "view");
+                  minX = Math.min(minX, gridX);
+                  minY = Math.min(minY, gridY);
+                  maxX = Math.max(maxX, gridX);
+                  maxY = Math.max(maxY, gridY);
+                });
 
-                if (this.mode === "view") {
-                  this.showGlobalGrid = false;
-                } else {
-                  this.showGlobalGrid = true;
-                }
-              },
-              beforeUnmount() {
-                // Clean up event listener
-                document.removeEventListener("keydown", this.handleKeyboardShortcuts);
-              },
-              methods: {
-                handleKeyboardShortcuts(event) {
-                  // Check if ctrl/cmd key is pressed
-                  if (event.ctrlKey || event.metaKey) {
-                    if (event.key === "z") {
-                      event.preventDefault();
-                      // Only allow undo when there are at least 2 states in history
-                      if (this.history.length >= 2 && this.historyIndex > 0) {
-                        this.undo();
-                      }
-                    } else if (event.key === "y") {
-                      event.preventDefault();
-                      if (this.canRedo) {
-                        this.redo();
-                      }
-                    }
-                  }
-                },
-                loadDefaultConfig() {
-                  fetch(`${this.config.paths.config}/default.json`)
-                    .then((response) => response.json())
-                    .then((data) => {
-                      this.skills = [];
-                      this.connections = [];
+                // Calculate center offset
+                const treeWidth = maxX - minX;
+                const treeHeight = maxY - minY;
+                const offsetX = (viewport.width - treeWidth) / 2 - treeWidth;
+                const offsetY =
+                  (viewport.height - treeHeight) / 2 - treeHeight / 2 + 100;
 
-                      // Set the initial class name and background
-                      const isMobile = window.innerWidth <= 768;
+                // Second pass: create skills with centered positions
+                data.Skills.forEach((skillData, index) => {
+                  const posMatch =
+                    skillData["Skill Position"].match(/\((\d+),\s*(\d+)\)/);
+                  const x = parseInt(posMatch[1]);
+                  const y = parseInt(posMatch[2]);
 
-                      // Set the initial class name and background
-                      this.currentName = isMobile
-                        ? "Try Tapping A Skill"
-                        : "Try Generating a Class, or Clicking a Skill.";
-
-                      this.currentBackgroundLink = data["Class Image"]
-                        ? `${this.config.paths.images.backgrounds}${data["Class Image"]}`
-                        : "/img/background/grass-ancient.jpg";
-
-                      // First pass: Create a map of skill dependencies and levels
-                      const skillLevels = new Map();
-                      const skillDeps = new Map();
-
-                      data.Skills.forEach((skill) => {
-                        const name = skill["Skill Name"];
-                        skillDeps.set(
-                          name,
-                          skill["Skill Prerequisite"] !== "-"
-                            ? skill["Skill Prerequisite"].split(" (")[0]
-                            : null
-                        );
-                      });
-
-                      // Calculate levels based on prerequisites
-                      const calculateLevel = (skillName, visited = new Set()) => {
-                        if (visited.has(skillName)) return 0; // Handle circular dependencies
-                        visited.add(skillName);
-
-                        const prereq = skillDeps.get(skillName);
-                        if (!prereq) return 0;
-
-                        return 1 + calculateLevel(prereq, visited);
-                      };
-
-                      // Assign levels to all skills
-                      data.Skills.forEach((skill) => {
-                        const level = calculateLevel(skill["Skill Name"]);
-                        skillLevels.set(skill["Skill Name"], level);
-                      });
-
-                      // Group skills by level
-                      const skillsByLevel = new Map();
-                      skillLevels.forEach((level, name) => {
-                        if (!skillsByLevel.has(level)) {
-                          skillsByLevel.set(level, []);
-                        }
-                        skillsByLevel.get(level).push(name);
-                      });
-
-                      // Calculate positions
-                      data.Skills = data.Skills.map((skill) => {
-                        if (!skill["Skill Position"]) {
-                          const level = skillLevels.get(skill["Skill Name"]);
-                          const skillsAtLevel = skillsByLevel.get(level);
-                          const indexAtLevel = skillsAtLevel.indexOf(skill["Skill Name"]);
-
-                          // Calculate grid position
-                          // Level determines x (column), index within level determines y (row)
-                          const x = level + 1; // Add 1 to avoid x=0
-                          const y = indexAtLevel + 1;
-
-                          skill["Skill Position"] = `(${x},${y})`;
-                        }
-                        return skill;
-                      });
-
-                      // Continue with existing positioning logic...
-                      const viewport = {
-                        width: window.innerWidth,
-                        height: window.innerHeight,
-                      };
-
-                      // Find bounds of the skill tree
-                      let minX = Infinity,
-                        minY = Infinity,
-                        maxX = -Infinity,
-                        maxY = -Infinity;
-
-                      // First pass: calculate bounds
-                      data.Skills.forEach((skillData) => {
-                        const posMatch = skillData["Skill Position"].match(/\((\d+),\s*(\d+)\)/);
-                        const x = parseInt(posMatch[1]);
-                        const y = parseInt(posMatch[2]);
-
-                        const gridX = this.config.grid.startX + (x - 1) * this.config.grid.spacing;
-                        const gridY = this.config.grid.startY + (y - 1) * this.config.grid.spacing;
-
-                        minX = Math.min(minX, gridX);
-                        minY = Math.min(minY, gridY);
-                        maxX = Math.max(maxX, gridX);
-                        maxY = Math.max(maxY, gridY);
-                      });
-
-                      // Calculate center offset
-                      const treeWidth = maxX - minX;
-                      const treeHeight = maxY - minY;
-                      const offsetX = (viewport.width - treeWidth) / 2 - treeWidth;
-                      const offsetY = (viewport.height - treeHeight) / 2 - treeHeight / 2 + 100;
-
-                      // Second pass: create skills with centered positions
-                      data.Skills.forEach((skillData, index) => {
-                        const posMatch = skillData["Skill Position"].match(/\((\d+),\s*(\d+)\)/);
-                        const x = parseInt(posMatch[1]);
-                        const y = parseInt(posMatch[2]);
-
-                        const skill = {
-                          id: ++this.skillIdCounter,
-                          name: skillData["Skill Name"],
-                          x: this.config.grid.startX + (x - 1) * this.config.grid.spacing + offsetX,
-                          y: this.config.grid.startY + (y - 1) * this.config.grid.spacing + offsetY,
-                          showActions: false,
-                          level: skillData["Skill Level"],
-                          // damage: skillData["Skill Damage"],
-                          description: skillData["Skill Description"],
-                          maxPoints: skillData["Skill Max Points"] || this.defaultMaxPoints,
-                          currentPoints: index < 4 ? 1 : skillData["Skill Current Points"] || 0,
-                          image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
-                          shouldAnimate: false,
-                          resources: [],
-                        };
-                        // Add damage to resources if it exists
-                        if (skillData["Skill Damage"]) {
-                          skill.resources.push({
-                            name: "Damage",
-                            value: skillData["Skill Damage"],
-                            color: "#ff4747",
-                          });
-                        }
-
-                        this.skills.push(skill);
-
-                        // Create connection if there's a prerequisite
-                        if (skillData["Skill Prerequisite"] !== "-") {
-                          const prereqName = skillData["Skill Prerequisite"].split(" (")[0];
-                          const prereqSkill = this.skills.find((s) => s.name === prereqName);
-                          if (prereqSkill) {
-                            this.connections.push({
-                              id: `${prereqSkill.id}-${skill.id}`,
-                              from: prereqSkill.id,
-                              to: skill.id,
-                            });
-                          }
-                        }
-                      });
-
-                      // Trigger animations with a slight delay for each skill
-                      setTimeout(() => {
-                        this.skills.forEach((skill, index) => {
-                          setTimeout(() => {
-                            skill.shouldAnimate = true;
-                          }, index * 50); // 50ms delay between each skill
-                        });
-                      }, 100); // Initial delay of 100ms
-
-                      // Initialize history with the initial state
-                      this.history = [];
-                      this.historyIndex = -1; // Reset history index
-
-                      // Force an initial state save after everything is loaded
-                      this.$nextTick(() => {
-                        if (this.skills.length > 0) {
-                          this.saveToHistory();
-                        }
-                      });
-                    })
-                    .catch((error) => console.error("Error loading default config:", error));
-                },
-                handleClick(event) {
-                  if (this.isViewMode()) return;
-
-                  // Don't create skill if we just finished making a selection
-                  // if (!this.selectionBox) {
-                  // if (!event.target.classList.contains('skill')) {
-                  // this.selectedSkills = []; // Clear selection when clicking empty space
-                  // }
-                  // return;
-                  // }
-
-                  if (!this.isDragging && event.target.classList.contains("talent-tree")) {
-                    if (!this.isDragging && this.selectionBox === null) {
-                      this.createSkill(event.offsetX, event.offsetY);
-                    }
-                  }
-                  this.isDragging = false;
-                },
-
-                createSkill(x, y) {
                   const skill = {
                     id: ++this.skillIdCounter,
-                    x: x - this.config.skill.offset,
-                    y: y - this.config.skill.offset,
-                    name: `Skill ${this.skillIdCounter}`,
+                    name: skillData["Skill Name"],
+                    x:
+                      this.config.grid.startX +
+                      (x - 1) * this.config.grid.spacing +
+                      offsetX,
+                    y:
+                      this.config.grid.startY +
+                      (y - 1) * this.config.grid.spacing +
+                      offsetY,
                     showActions: false,
-                    showTooltip: false,
-                    description: "Click to edit skill description.",
-                    // damage: '0',
-                    maxPoints: this.defaultMaxPoints,
-                    currentPoints: 0,
-                    requiredPoints: 0,
-                    image: this.config.paths.images.default,
-                    shouldAnimate: true, // Set to true immediately
+                    level: skillData["Skill Level"],
+                    // damage: skillData["Skill Damage"],
+                    description: skillData["Skill Description"],
+                    maxPoints:
+                      skillData["Skill Max Points"] || this.defaultMaxPoints,
+                    currentPoints:
+                      index < 4 ? 1 : skillData["Skill Current Points"] || 0,
+                    image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
+                    shouldAnimate: false,
                     resources: [],
                   };
-                  if (this.showGlobalGrid) {
-                    const snappedPos = this.snapToGrid(x, y);
-                    skill.x = snappedPos.x;
-                    skill.y = snappedPos.y;
+                  // Add damage to resources if it exists
+                  if (skillData["Skill Damage"]) {
+                    skill.resources.push({
+                      name: "Damage",
+                      value: skillData["Skill Damage"],
+                      color: "#ff4747",
+                    });
                   }
+
                   this.skills.push(skill);
-                  this.saveToHistory();
 
-                  // Force the image to be visible immediately after creation
-                  this.$nextTick(() => {
-                    const skillElement = document.querySelector(`[data-skill-id="${skill.id}"] img`);
-                    if (skillElement) {
-                      skillElement.style.opacity = "1";
+                  // Create connection if there's a prerequisite
+                  if (skillData["Skill Prerequisite"] !== "-") {
+                    const prereqName =
+                      skillData["Skill Prerequisite"].split(" (")[0];
+                    const prereqSkill = this.skills.find(
+                      (s) => s.name === prereqName
+                    );
+                    if (prereqSkill) {
+                      this.connections.push({
+                        id: `${prereqSkill.id}-${skill.id}`,
+                        from: prereqSkill.id,
+                        to: skill.id,
+                      });
                     }
+                  }
+                });
+
+                // Trigger animations with a slight delay for each skill
+                setTimeout(() => {
+                  this.skills.forEach((skill, index) => {
+                    setTimeout(() => {
+                      skill.shouldAnimate = true;
+                    }, index * 50); // 50ms delay between each skill
                   });
-                },
+                }, 100); // Initial delay of 100ms
 
-                toggleActions(skill) {
-                  // Only process click if we haven't dragged
-                  if (!this.isDragging) {
-                    if (this.isLinking) {
-                      // If we're in linking mode, treat this as the second skill
-                      this.connectSkill(skill);
-                      return;
+                // Initialize history with the initial state
+                this.history = [];
+                this.historyIndex = -1; // Reset history index
+
+                // Force an initial state save after everything is loaded
+                this.$nextTick(() => {
+                  if (this.skills.length > 0) {
+                    this.saveToHistory();
+                  }
+                });
+              })
+              .catch((error) =>
+                console.error("Error loading default config:", error)
+              );
+          },
+          handleClick(event) {
+            if (this.isViewMode()) return;
+
+            // Don't create skill if we just finished making a selection
+            // if (!this.selectionBox) {
+            // if (!event.target.classList.contains('skill')) {
+            // this.selectedSkills = []; // Clear selection when clicking empty space
+            // }
+            // return;
+            // }
+
+            if (
+              !this.isDragging &&
+              event.target.classList.contains("talent-tree")
+            ) {
+              if (!this.isDragging && this.selectionBox === null) {
+                this.createSkill(event.offsetX, event.offsetY);
+              }
+            }
+            this.isDragging = false;
+          },
+
+          createSkill(x, y) {
+            const skill = {
+              id: ++this.skillIdCounter,
+              x: x - this.config.skill.offset,
+              y: y - this.config.skill.offset,
+              name: `Skill ${this.skillIdCounter}`,
+              showActions: false,
+              showTooltip: false,
+              description: "Click to edit skill description.",
+              // damage: '0',
+              maxPoints: this.defaultMaxPoints,
+              currentPoints: 0,
+              requiredPoints: 0,
+              image: this.config.paths.images.default,
+              shouldAnimate: true, // Set to true immediately
+              resources: [],
+            };
+            if (this.showGlobalGrid) {
+              const snappedPos = this.snapToGrid(x, y);
+              skill.x = snappedPos.x;
+              skill.y = snappedPos.y;
+            }
+            this.skills.push(skill);
+            this.saveToHistory();
+
+            // Force the image to be visible immediately after creation
+            this.$nextTick(() => {
+              const skillElement = document.querySelector(
+                `[data-skill-id="${skill.id}"] img`
+              );
+              if (skillElement) {
+                skillElement.style.opacity = "1";
+              }
+            });
+          },
+
+          toggleActions(skill) {
+            // Only process click if we haven't dragged
+            if (!this.isDragging) {
+              if (this.isLinking) {
+                // If we're in linking mode, treat this as the second skill
+                this.connectSkill(skill);
+                return;
+              }
+
+              // Hide all other action menus
+              this.skills.forEach((s) => {
+                if (s.id !== skill.id) s.showActions = false;
+              });
+
+              // Increment points only on clean click
+              if (skill.currentPoints < skill.maxPoints) {
+                if (this.isViewMode()) {
+                  if (this.canAddPoint(skill)) {
+                    skill.currentPoints++;
+                  }
+                } else {
+                  if (skill.showActions) {
+                    //Avoid increment if first click to edit skil
+                    if (this.canAddPoint(skill)) {
+                      skill.currentPoints++;
+                    }
+                  }
+                }
+              }
+
+              if (this.isViewMode()) return;
+
+              // Don't toggle if actions are already shown
+              if (!skill.showActions) {
+                skill.showActions = true;
+              }
+            }
+          },
+
+          editSkill(skill) {
+            // Ensure resources is initialized when editing
+            this.editingSkill = {
+              ...skill,
+              resources: skill.resources || [],
+            };
+            // Focus name input after modal opens
+            this.$nextTick(() => {
+              this.$refs.nameInput?.focus();
+            });
+          },
+
+          saveEdit() {
+            if (!this.editingSkill) return;
+
+            const skill = this.skills.find(
+              (s) => s.id === this.editingSkill.id
+            );
+            if (skill) {
+              skill.name = this.editingSkill.name;
+              skill.description = this.editingSkill.description;
+              skill.damage = this.editingSkill.damage;
+              skill.image = this.editingSkill.image;
+
+              // Handle max points and current points changes
+              const newMaxPoints = parseInt(this.editingSkill.maxPoints);
+              const newCurrentPoints = parseInt(
+                this.editingSkill.currentPoints
+              );
+              const newRequiredPoints = parseInt(
+                this.editingSkill.requiredPoints
+              );
+              skill.maxPoints = newMaxPoints;
+              skill.currentPoints = Math.min(newCurrentPoints, newMaxPoints); // Update current points
+              skill.requiredPoints = newRequiredPoints;
+              skill.resources = this.editingSkill.resources || [];
+            }
+            this.editingSkill = null;
+            this.showImageSelector = false;
+            this.saveToHistory();
+          },
+
+          cancelEdit() {
+            this.editingSkill = null;
+          },
+
+          deleteSkill(skill) {
+            this.skills = this.skills.filter((s) => s.id !== skill.id);
+            this.connections = this.connections.filter(
+              (c) => c.from !== skill.id && c.to !== skill.id
+            );
+            this.saveToHistory();
+          },
+
+          connectSkill(skill) {
+            if (!this.connectingFrom) {
+              // Starting a new connection
+              this.connectingFrom = skill;
+              this.isLinking = true;
+              // Hide actions menu and all tooltips
+              this.skills.forEach((s) => {
+                s.showActions = false;
+                s.showTooltip = false;
+              });
+            } else {
+              // Completing a connection
+              if (this.connectingFrom.id !== skill.id) {
+                this.connections.push({
+                  id: `${this.connectingFrom.id}-${skill.id}`,
+                  from: this.connectingFrom.id,
+                  to: skill.id,
+                });
+              }
+              // Reset connection state
+              this.connectingFrom = null;
+              this.isLinking = false;
+            }
+            this.saveToHistory();
+          },
+
+          getConnectionStyle(connection) {
+            const fromSkill = this.skills.find((s) => s.id === connection.from);
+            const toSkill = this.skills.find((s) => s.id === connection.to);
+
+            if (!fromSkill || !toSkill) return {};
+
+            const dx = toSkill.x - fromSkill.x;
+            const dy = toSkill.y - fromSkill.y;
+            const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+            const length = Math.sqrt(dx * dx + dy * dy);
+
+            return {
+              left: fromSkill.x + 30 + "px",
+              top: fromSkill.y + 30 + "px",
+              width: length + "px",
+              height: this.config.connection.height + "px", // Use configurable height
+              transform: `rotate(${angle}deg)`,
+            };
+          },
+
+          startDrag(event, skill) {
+            if (this.isViewMode()) return;
+
+            event.preventDefault();
+            const pointer = event.touches ? event.touches[0] : event;
+
+            // Store initial positions of selected skills
+            this.initialPositions = {};
+            this.selectedSkills.forEach((skill) => {
+              if (skill) {
+                this.initialPositions[skill.id] = { x: skill.x, y: skill.y };
+              }
+            });
+
+            // Store initial position and time
+            this.dragStartTime = Date.now();
+            this.dragStartPos = {
+              x: pointer.clientX,
+              y: pointer.clientY,
+            };
+
+            this.isDragging = false; // Reset drag state
+            this.draggedSkill = skill;
+            const treeRect = event.target
+              .closest(".talent-tree")
+              .getBoundingClientRect();
+
+            this.draggedElement = event.target.closest(".skill");
+
+            this.dragOffset = {
+              x: pointer.clientX - (skill.x + treeRect.left),
+              y: pointer.clientY - (skill.y + treeRect.top),
+            };
+
+            // Add event listeners
+            if (event.touches) {
+              document.addEventListener("touchmove", this.handleDrag, {
+                passive: false,
+              });
+              document.addEventListener("touchend", this.stopDrag);
+            } else {
+              document.addEventListener("mousemove", this.handleDrag);
+              document.addEventListener("mouseup", this.stopDrag);
+            }
+          },
+
+          handleDrag(event) {
+            if (!this.draggedSkill) return;
+
+            const pointer = event.touches ? event.touches[0] : event;
+
+            // Move selected skills
+            // if (this.draggedSkill) {
+            //     const dx = event.clientX - this.dragOffset.x - this.draggedSkill.x;
+            //     const dy = event.clientY - this.dragOffset.y - this.draggedSkill.y;
+
+            //     const skillsToMove = [...new Set([...this.selectedSkills, this.draggedSkill])];
+            //     skillsToMove.forEach(skill => {
+            //         skill.x += dx;
+            //         skill.y += dy;
+            //     });
+            // }
+
+            // Check if movement exceeds drag threshold
+            if (!this.isDragging) {
+              const dx = pointer.pageX - this.dragStartPos.x;
+              const dy = pointer.pageY - this.dragStartPos.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              if (distance > this.dragThreshold) {
+                this.isDragging = true;
+              }
+            }
+
+            if (this.isDragging) {
+              const treeRect = document
+                .querySelector(".talent-tree")
+                .getBoundingClientRect();
+              const newX =
+                pointer.pageX -
+                this.dragOffset.x -
+                treeRect.left -
+                window.scrollX;
+              const newY =
+                pointer.pageY -
+                this.dragOffset.y -
+                treeRect.top -
+                window.scrollY;
+
+              let finalX = newX;
+              let finalY = newY;
+
+              if (this.gridSnapEnabled) {
+                // Find nearby skills for snapping
+                const snapThreshold = this.snapThreshold;
+                const nearbySkills = this.skills.filter(
+                  (skill) =>
+                    skill.id !== this.draggedSkill.id &&
+                    (Math.abs(skill.x - newX) < 150 ||
+                      Math.abs(skill.y - newY) < 150) // Consider skills nearby in either direction
+                );
+
+                // Find the closest skill in x-direction within threshold
+                const closestXSkill = nearbySkills.reduce((closest, skill) => {
+                  const distance = Math.abs(skill.x - newX);
+                  if (
+                    distance < snapThreshold &&
+                    (!closest || distance < Math.abs(closest.x - newX))
+                  ) {
+                    return skill;
+                  }
+                  return closest;
+                }, null);
+
+                // Find the closest skill in y-direction within threshold
+                const closestYSkill = nearbySkills.reduce((closest, skill) => {
+                  const distance = Math.abs(skill.y - newY);
+                  if (
+                    distance < snapThreshold &&
+                    (!closest || distance < Math.abs(closest.y - newY))
+                  ) {
+                    return skill;
+                  }
+                  return closest;
+                }, null);
+
+                if (closestXSkill) {
+                  finalX = closestXSkill.x;
+                }
+
+                if (closestYSkill) {
+                  finalY = closestYSkill.y;
+                }
+              }
+
+              // Apply grid snapping if enabled
+              if (this.showGlobalGrid) {
+                const snappedPos = this.snapToGrid(newX, newY);
+
+                finalX = snappedPos.x;
+                finalY = snappedPos.y;
+              }
+
+              // Calculate movement delta
+              const dx = finalX - this.dragStartPos.x;
+              const dy = finalY - this.dragStartPos.y;
+
+              requestAnimationFrame(() => {
+                this.draggedElement.style.left = `${finalX}px`;
+                this.draggedElement.style.top = `${finalY}px`;
+
+                this.draggedSkill.x = finalX;
+                this.draggedSkill.y = finalY;
+
+                // console.log("selectedSkills", this.selectedSkills)
+                // Move all other selected skills maintaining relative positions
+                this.selectedSkills.forEach((skillInArray) => {
+                  if (skillInArray.id !== this.draggedSkill.id) {
+                    let skill = this.skills.find(
+                      (s) => s.id === skillInArray.id
+                    );
+                    if (skill) {
+                      skill.x =
+                        finalX -
+                        this.dragStartPos.x +
+                        30 +
+                        this.initialPositions[skillInArray.id].x;
+                      skill.y =
+                        finalY -
+                        this.dragStartPos.y +
+                        30 +
+                        this.initialPositions[skillInArray.id].y;
+                      const skillElement = document.querySelector(
+                        `[data-skill-id="${skill.id}"]`
+                      );
+                      if (skillElement) {
+                        skillElement.style.left = `${skill.x}px`;
+                        skillElement.style.top = `${skill.y}px`;
+                      }
+                    }
+                  }
+                });
+              });
+            }
+          },
+
+          stopDrag() {
+            this.selectionBox = null;
+            // Don't reset isDragging immediately
+            const wasDragging = this.isDragging;
+
+            this.draggedSkill = null;
+            this.initialPositions = null; // Clean up the initial positions
+
+            // Use setTimeout to reset isDragging after click events have processed
+            setTimeout(() => {
+              this.isDragging = false;
+            }, 0);
+
+            // Remove event listeners
+            document.removeEventListener("mousemove", this.handleDrag);
+            document.removeEventListener("mouseup", this.stopDrag);
+            document.removeEventListener("touchmove", this.handleDrag);
+            document.removeEventListener("touchend", this.stopDrag);
+          },
+
+          showActionTooltip(event, text) {
+            const tooltip = document.createElement("div");
+            tooltip.className = "action-btn-tooltip";
+            if (text === "Edit skill" && this.selectedSkills.length > 1) {
+              text = "Edit skills";
+            }
+            tooltip.textContent = text;
+            event.target.appendChild(tooltip);
+          },
+
+          hideActionTooltip(event) {
+            const tooltip = event.target.querySelector(".action-btn-tooltip");
+            if (tooltip) {
+              tooltip.remove();
+            }
+          },
+
+          decrementPoints(skill) {
+            if (skill.currentPoints > 0) {
+              skill.currentPoints--;
+            }
+          },
+
+          isConnectionActive(connection) {
+            const fromSkill = this.skills.find((s) => s.id === connection.from);
+            const toSkill = this.skills.find((s) => s.id === connection.to);
+            return fromSkill?.currentPoints > 0 && toSkill?.currentPoints > 0;
+          },
+
+          toggleOptions() {
+            this.showOptions = !this.showOptions;
+          },
+          handleImageLoad(event) {
+            event.target.style.opacity = "1";
+          },
+
+          startPan(event) {
+            if (
+              event.button === 0 &&
+              event.target.classList.contains("talent-tree")
+            ) {
+              // Left click for selection box
+              event.preventDefault();
+              this.initialClick = {
+                x: event.offsetX,
+                y: event.offsetY,
+              };
+              document.addEventListener("mousemove", this.handleSelection);
+              document.addEventListener("mouseup", this.stopSelection);
+            }
+            if (event.button === 2) {
+              // Right click
+              event.preventDefault();
+              this.isPanning = true;
+              this.panStart = {
+                x: event.clientX - this.treePosition.x,
+                y: event.clientY - this.treePosition.y,
+              };
+              document.addEventListener("mousemove", this.handlePan);
+              document.addEventListener("mouseup", this.stopPan);
+            }
+          },
+
+          handlePan(event) {
+            if (this.isPanning) {
+              const newX = event.clientX - this.panStart.x;
+              const newY = event.clientY - this.panStart.y;
+              this.treePosition = { x: newX, y: newY };
+
+              // Update all skill positions
+              this.skills.forEach((skill) => {
+                skill.x += event.movementX;
+                skill.y += event.movementY;
+              });
+
+              // Force grid recomputation by triggering reactivity
+              if (this.showGlobalGrid) {
+                this.$forceUpdate();
+              }
+            }
+          },
+
+          stopPan() {
+            this.isPanning = false;
+            document.removeEventListener("mousemove", this.handlePan);
+            document.removeEventListener("mouseup", this.stopPan);
+          },
+
+          handleZoom(event) {
+            event.preventDefault();
+
+            // Determine zoom direction
+            const zoomIn = event.deltaY < 0;
+
+            // Calculate new scale
+            let newScale =
+              this.scale + (zoomIn ? this.scaleStep : -this.scaleStep);
+
+            // Clamp scale between min and max values
+            newScale = Math.max(
+              this.minScale,
+              Math.min(this.maxScale, newScale)
+            );
+
+            // Only proceed if scale actually changed
+            if (newScale !== this.scale) {
+              // Get mouse position relative to the tree
+              const rect = event.target.getBoundingClientRect();
+              const mouseX = event.clientX - rect.left;
+              const mouseY = event.clientY - rect.top;
+
+              // Calculate scale factor
+              const scaleFactor = newScale / this.scale;
+
+              // Update all skill positions relative to mouse position
+              this.skills.forEach((skill) => {
+                skill.x = mouseX + (skill.x - mouseX) * scaleFactor;
+                skill.y = mouseY + (skill.y - mouseY) * scaleFactor;
+              });
+
+              const skillElements = document.querySelectorAll(".skill");
+              skillElements.forEach((element) => {
+                // element.style.transform = `scale(${newScale})`;
+                // Adjust the hit area for interactions
+                // element.style.width = `${60 - 10 / newScale}px`;
+                // element.style.height = `${60 - 10 / newScale}px`;
+              });
+
+              this.scale = newScale;
+            }
+          },
+
+          exportToJson() {
+            const exportData = {
+              Skills: this.skills.map((skill) => {
+                // Find all connections where this skill is the prerequisite
+                const dependentSkills = this.connections
+                  .filter((conn) => conn.from === skill.id)
+                  .map((conn) => {
+                    const targetSkill = this.skills.find(
+                      (s) => s.id === conn.to
+                    );
+                    return targetSkill ? targetSkill.name : null;
+                  })
+                  .filter((name) => name !== null);
+
+                return {
+                  "Skill Name": skill.name,
+                  "Skill Position": `(${Math.round(
+                    (skill.x - this.config.grid.startX) /
+                      this.config.grid.spacing +
+                      1
+                  )},${Math.round(
+                    (skill.y - this.config.grid.startY) /
+                      this.config.grid.spacing +
+                      1
+                  )})`,
+                  "Skill Position Exact": { x: skill.x, y: skill.y },
+                  "Skill Level": skill.level || 1,
+                  "Skill Damage": skill.damage,
+                  "Skill Description": skill.description,
+                  "Skill Max Points": skill.maxPoints,
+                  "Skill Current Points": skill.currentPoints,
+                  "Skill Image": skill.image.startsWith("data:")
+                    ? this.customImages.find((img) => img.src === skill.image)
+                        ?.id || skill.image
+                    : skill.image.split("/img/skill")[1],
+                  "Skill Dependencies": dependentSkills, // Add this new field
+                  "Skill Prerequisite": this.getPrerequisite(skill),
+                  "Skill Resources": skill.resources || [],
+                };
+              }),
+              "Class Name": this.currentName,
+              FullData: this.$data,
+              // "FullData": {
+              //     ...this.$data,
+              //     recentBackgrounds: [], // Clear recent backgrounds from full data
+              // }
+            };
+
+            // Create and trigger download
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri =
+              "data:application/json;charset=utf-8," +
+              encodeURIComponent(dataStr);
+            const exportFileDefaultName = "talent-tree-config.json";
+
+            const linkElement = document.createElement("a");
+            linkElement.setAttribute("href", dataUri);
+            linkElement.setAttribute("download", exportFileDefaultName);
+            linkElement.click();
+          },
+
+          getPrerequisite(skill) {
+            const connection = this.connections.find((c) => c.to === skill.id);
+            if (!connection) return "-";
+
+            const prereqSkill = this.skills.find(
+              (s) => s.id === connection.from
+            );
+            return prereqSkill
+              ? `${prereqSkill.name} (${prereqSkill.level || 1})`
+              : "-";
+          },
+
+          handleSkillTouch(event, skill) {
+            event.preventDefault();
+
+            // Only proceed with skill touch handling if we're not panning
+            if (!this.isPanning) {
+              if (this.isLinking) {
+                this.connectSkill(skill);
+                return;
+              }
+
+              this.skills.forEach((s) => {
+                const el = document.querySelector(`[data-skill-id="${s.id}"]`);
+                if (el) {
+                  el.style.zIndex = s.id === skill.id ? "1000" : "10";
+                }
+              });
+
+              const currentTime = new Date().getTime();
+              const tapLength = currentTime - this.lastTap;
+
+              // Hide all other tooltips before showing the current one
+              this.skills.forEach((s) => {
+                if (s.id !== skill.id) {
+                  s.showTooltip = false;
+                }
+              });
+
+              // Show tooltip for current skill
+              skill.showTooltip = true;
+
+              // Store touch start position for drag detection
+              const touch = event.touches[0];
+              this.touchStartX = touch.clientX;
+              this.touchStartY = touch.clientY;
+
+              // Start potential drag operation
+              this.startDrag(event, skill);
+
+              // Set a timeout to detect if this is a tap or a drag
+              this.touchTimeout = setTimeout(() => {
+                if (!this.isDragging) {
+                  // This was a tap, not a drag
+                  if (tapLength < this.doubleTapDelay && tapLength > 0) {
+                    // Double tap - decrement points (like right click)
+                    if (skill.currentPoints > 0) {
+                      skill.currentPoints--;
+                    }
+                  } else {
+                    // Single tap - toggle actions and increment points
+                    if (skill.currentPoints < skill.maxPoints) {
+                      skill.currentPoints++;
                     }
 
-                    // Hide all other action menus
+                    if (this.isViewMode()) return;
+
                     this.skills.forEach((s) => {
                       if (s.id !== skill.id) s.showActions = false;
                     });
 
-                    // Increment points only on clean click
-                    if (skill.currentPoints < skill.maxPoints) {
-                      if (this.isViewMode()) {
-                        if (this.canAddPoint(skill)) {
-                          skill.currentPoints++;
-                        }
-                      } else {
-                        if (skill.showActions) {
-                          //Avoid increment if first click to edit skil
-                          if (this.canAddPoint(skill)) {
-                            skill.currentPoints++;
-                          }
-                        }
-                      }
-      <<<<<<< HEAD
-                  },
-                  beforeUnmount() {
-                      // Clean up event listener
-                      document.removeEventListener('keydown', this.handleKeyboardShortcuts);
-                  },
-                  methods: {
-                      handleKeyboardShortcuts(event) {
-                          // Check if ctrl/cmd key is pressed
-                          if (event.ctrlKey || event.metaKey) {
-                              if (event.key === 'z') {
-                                  event.preventDefault();
-                                  // Only allow undo when there are at least 2 states in history
-                                  if (this.history.length >= 2 && this.historyIndex > 0) {
-                                      this.undo();
-                                  }
-                              } else if (event.key === 'y') {
-                                  event.preventDefault();
-                                  if (this.canRedo) {
-                                      this.redo();
-                                  }
-                              }
-                              else if (event.key === "c") {
-                                  event.preventDefault();
-                                  this.copy();
-                              }
-                              else if (event.key === "v") {
-                                  event.preventDefault();
-                                  this.paste();
-                              }
-                          }
-                      },
-                      loadDefaultConfig() {
-                          fetch(`${this.config.paths.config}/default.json`)
-                              .then(response => response.json())
-                              .then(data => {
-                                  this.skills = []
-                                  this.connections = []
-      =======
-                    }
-      >>>>>>> main
-
-                    if (this.isViewMode()) return;
-
-                    // Don't toggle if actions are already shown
                     if (!skill.showActions) {
                       skill.showActions = true;
                     }
                   }
-                },
-
-                editSkill(skill) {
-                  // Ensure resources is initialized when editing
-                  this.editingSkill = {
-                    ...skill,
-                    resources: skill.resources || [],
-                  };
-                  // Focus name input after modal opens
-                  this.$nextTick(() => {
-                    this.$refs.nameInput?.focus();
-                  });
-                },
-
-                saveEdit() {
-                  if (!this.editingSkill) return;
-
-                  const skill = this.skills.find((s) => s.id === this.editingSkill.id);
-                  if (skill) {
-                    skill.name = this.editingSkill.name;
-                    skill.description = this.editingSkill.description;
-                    skill.damage = this.editingSkill.damage;
-                    skill.image = this.editingSkill.image;
-
-                    // Handle max points and current points changes
-                    const newMaxPoints = parseInt(this.editingSkill.maxPoints);
-                    const newCurrentPoints = parseInt(this.editingSkill.currentPoints);
-                    const newRequiredPoints = parseInt(this.editingSkill.requiredPoints);
-                    skill.maxPoints = newMaxPoints;
-                    skill.currentPoints = Math.min(newCurrentPoints, newMaxPoints); // Update current points
-                    skill.requiredPoints = newRequiredPoints;
-                    skill.resources = this.editingSkill.resources || [];
-                  }
-                  this.editingSkill = null;
-                  this.showImageSelector = false;
-                  this.saveToHistory();
-                },
-
-                cancelEdit() {
-                  this.editingSkill = null;
-                },
-
-                deleteSkill(skill) {
-                  this.skills = this.skills.filter((s) => s.id !== skill.id);
-                  this.connections = this.connections.filter(
-                    (c) => c.from !== skill.id && c.to !== skill.id
-                  );
-                  this.saveToHistory();
-                },
-
-                connectSkill(skill) {
-                  if (!this.connectingFrom) {
-                    // Starting a new connection
-                    this.connectingFrom = skill;
-                    this.isLinking = true;
-                    // Hide actions menu and all tooltips
-                    this.skills.forEach((s) => {
-                      s.showActions = false;
-                      s.showTooltip = false;
-                    });
-                  } else {
-                    // Completing a connection
-                    if (this.connectingFrom.id !== skill.id) {
-                      this.connections.push({
-                        id: `${this.connectingFrom.id}-${skill.id}`,
-                        from: this.connectingFrom.id,
-                        to: skill.id,
-                      });
-                    }
-                    // Reset connection state
-                    this.connectingFrom = null;
-                    this.isLinking = false;
-                  }
-                  this.saveToHistory();
-                },
-
-                getConnectionStyle(connection) {
-                  const fromSkill = this.skills.find((s) => s.id === connection.from);
-                  const toSkill = this.skills.find((s) => s.id === connection.to);
-
-                  if (!fromSkill || !toSkill) return {};
-
-                  const dx = toSkill.x - fromSkill.x;
-                  const dy = toSkill.y - fromSkill.y;
-                  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-                  const length = Math.sqrt(dx * dx + dy * dy);
-
-                  return {
-                    left: fromSkill.x + 30 + "px",
-                    top: fromSkill.y + 30 + "px",
-                    width: length + "px",
-                    height: this.config.connection.height + "px", // Use configurable height
-                    transform: `rotate(${angle}deg)`,
-                  };
-                },
-
-                startDrag(event, skill) {
-                  if (this.isViewMode()) return;
-
-                  event.preventDefault();
-                  const pointer = event.touches ? event.touches[0] : event;
-
-                  // Store initial positions of selected skills
-                  this.initialPositions = {};
-                  this.selectedSkills.forEach((skill) => {
-                    if (skill) {
-                      this.initialPositions[skill.id] = { x: skill.x, y: skill.y };
-                    }
-                  });
-
-                  // Store initial position and time
-                  this.dragStartTime = Date.now();
-                  this.dragStartPos = {
-                    x: pointer.clientX,
-                    y: pointer.clientY,
-                  };
-
-                  this.isDragging = false; // Reset drag state
-                  this.draggedSkill = skill;
-                  const treeRect = event.target.closest(".talent-tree").getBoundingClientRect();
-
-                  this.draggedElement = event.target.closest(".skill");
-
-                  this.dragOffset = {
-                    x: pointer.clientX - (skill.x + treeRect.left),
-                    y: pointer.clientY - (skill.y + treeRect.top),
-                  };
-
-                  // Add event listeners
-                  if (event.touches) {
-                    document.addEventListener("touchmove", this.handleDrag, { passive: false });
-                    document.addEventListener("touchend", this.stopDrag);
-                  } else {
-                    document.addEventListener("mousemove", this.handleDrag);
-                    document.addEventListener("mouseup", this.stopDrag);
-                  }
-                },
-
-                handleDrag(event) {
-                  if (!this.draggedSkill) return;
-
-                  const pointer = event.touches ? event.touches[0] : event;
-
-                  // Move selected skills
-                  // if (this.draggedSkill) {
-                  //     const dx = event.clientX - this.dragOffset.x - this.draggedSkill.x;
-                  //     const dy = event.clientY - this.dragOffset.y - this.draggedSkill.y;
-
-                  //     const skillsToMove = [...new Set([...this.selectedSkills, this.draggedSkill])];
-                  //     skillsToMove.forEach(skill => {
-                  //         skill.x += dx;
-                  //         skill.y += dy;
-                  //     });
-                  // }
-
-                  // Check if movement exceeds drag threshold
-                  if (!this.isDragging) {
-                    const dx = pointer.pageX - this.dragStartPos.x;
-                    const dy = pointer.pageY - this.dragStartPos.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance > this.dragThreshold) {
-                      this.isDragging = true;
-                    }
-                  }
-
-                  if (this.isDragging) {
-                    const treeRect = document.querySelector(".talent-tree").getBoundingClientRect();
-                    const newX = pointer.pageX - this.dragOffset.x - treeRect.left - window.scrollX;
-                    const newY = pointer.pageY - this.dragOffset.y - treeRect.top - window.scrollY;
-
-                    let finalX = newX;
-                    let finalY = newY;
-
-                    if (this.gridSnapEnabled) {
-                      // Find nearby skills for snapping
-                      const snapThreshold = this.snapThreshold;
-                      const nearbySkills = this.skills.filter(
-                        (skill) =>
-                          skill.id !== this.draggedSkill.id &&
-                          (Math.abs(skill.x - newX) < 150 || Math.abs(skill.y - newY) < 150) // Consider skills nearby in either direction
-                      );
-
-                      // Find the closest skill in x-direction within threshold
-                      const closestXSkill = nearbySkills.reduce((closest, skill) => {
-                        const distance = Math.abs(skill.x - newX);
-                        if (
-                          distance < snapThreshold &&
-                          (!closest || distance < Math.abs(closest.x - newX))
-                        ) {
-                          return skill;
-                        }
-                        return closest;
-                      }, null);
-
-                      // Find the closest skill in y-direction within threshold
-                      const closestYSkill = nearbySkills.reduce((closest, skill) => {
-                        const distance = Math.abs(skill.y - newY);
-                        if (
-                          distance < snapThreshold &&
-                          (!closest || distance < Math.abs(closest.y - newY))
-                        ) {
-                          return skill;
-                        }
-                        return closest;
-                      }, null);
-
-                      if (closestXSkill) {
-                        finalX = closestXSkill.x;
-                      }
-
-                      if (closestYSkill) {
-                        finalY = closestYSkill.y;
-                      }
-                    }
-
-                    // Apply grid snapping if enabled
-                    if (this.showGlobalGrid) {
-                      const snappedPos = this.snapToGrid(newX, newY);
-
-                      finalX = snappedPos.x;
-                      finalY = snappedPos.y;
-                    }
-
-                    // Calculate movement delta
-                    const dx = finalX - this.dragStartPos.x;
-                    const dy = finalY - this.dragStartPos.y;
-
-                    requestAnimationFrame(() => {
-                      this.draggedElement.style.left = `${finalX}px`;
-                      this.draggedElement.style.top = `${finalY}px`;
-
-                      this.draggedSkill.x = finalX;
-                      this.draggedSkill.y = finalY;
-
-                      // console.log("selectedSkills", this.selectedSkills)
-                      // Move all other selected skills maintaining relative positions
-                      this.selectedSkills.forEach((skillInArray) => {
-                        if (skillInArray.id !== this.draggedSkill.id) {
-                          let skill = this.skills.find((s) => s.id === skillInArray.id);
-                          if (skill) {
-                            skill.x =
-                              finalX -
-                              this.dragStartPos.x +
-                              30 +
-                              this.initialPositions[skillInArray.id].x;
-                            skill.y =
-                              finalY -
-                              this.dragStartPos.y +
-                              30 +
-                              this.initialPositions[skillInArray.id].y;
-                            const skillElement = document.querySelector(`[data-skill-id="${skill.id}"]`);
-                            if (skillElement) {
-                              skillElement.style.left = `${skill.x}px`;
-                              skillElement.style.top = `${skill.y}px`;
-                            }
-                          }
-                        }
-                      });
-                    });
-                  }
-                },
-
-                stopDrag() {
-                  this.selectionBox = null;
-                  // Don't reset isDragging immediately
-                  const wasDragging = this.isDragging;
-
-                  this.draggedSkill = null;
-                  this.initialPositions = null; // Clean up the initial positions
-
-                  // Use setTimeout to reset isDragging after click events have processed
-                  setTimeout(() => {
-                    this.isDragging = false;
-                  }, 0);
-
-                  // Remove event listeners
-                  document.removeEventListener("mousemove", this.handleDrag);
-                  document.removeEventListener("mouseup", this.stopDrag);
-                  document.removeEventListener("touchmove", this.handleDrag);
-                  document.removeEventListener("touchend", this.stopDrag);
-                },
-
-                showActionTooltip(event, text) {
-                  const tooltip = document.createElement("div");
-                  tooltip.className = "action-btn-tooltip";
-                  if (text === "Edit skill" && this.selectedSkills.length > 1) {
-                    text = "Edit skills";
-                  }
-                  tooltip.textContent = text;
-                  event.target.appendChild(tooltip);
-                },
-
-                hideActionTooltip(event) {
-                  const tooltip = event.target.querySelector(".action-btn-tooltip");
-                  if (tooltip) {
-                    tooltip.remove();
-                  }
-                },
-
-                decrementPoints(skill) {
-                  if (skill.currentPoints > 0) {
-                    skill.currentPoints--;
-                  }
-                },
-
-                isConnectionActive(connection) {
-                  const fromSkill = this.skills.find((s) => s.id === connection.from);
-                  const toSkill = this.skills.find((s) => s.id === connection.to);
-                  return fromSkill?.currentPoints > 0 && toSkill?.currentPoints > 0;
-                },
-
-                toggleOptions() {
-                  this.showOptions = !this.showOptions;
-                },
-                handleImageLoad(event) {
-                  event.target.style.opacity = "1";
-                },
-
-                startPan(event) {
-                  if (event.button === 0 && event.target.classList.contains("talent-tree")) {
-                    // Left click for selection box
-                    event.preventDefault();
-                    this.initialClick = {
-                      x: event.offsetX,
-                      y: event.offsetY,
-                    };
-                    document.addEventListener("mousemove", this.handleSelection);
-                    document.addEventListener("mouseup", this.stopSelection);
-                  }
-                  if (event.button === 2) {
-                    // Right click
-                    event.preventDefault();
-                    this.isPanning = true;
-                    this.panStart = {
-                      x: event.clientX - this.treePosition.x,
-                      y: event.clientY - this.treePosition.y,
-                    };
-                    document.addEventListener("mousemove", this.handlePan);
-                    document.addEventListener("mouseup", this.stopPan);
-                  }
-                },
-
-                handlePan(event) {
-                  if (this.isPanning) {
-                    const newX = event.clientX - this.panStart.x;
-                    const newY = event.clientY - this.panStart.y;
-                    this.treePosition = { x: newX, y: newY };
-
-                    // Update all skill positions
-                    this.skills.forEach((skill) => {
-                      skill.x += event.movementX;
-                      skill.y += event.movementY;
-                    });
-
-                    // Force grid recomputation by triggering reactivity
-                    if (this.showGlobalGrid) {
-                      this.$forceUpdate();
-                    }
-                  }
-                },
-
-                stopPan() {
-                  this.isPanning = false;
-                  document.removeEventListener("mousemove", this.handlePan);
-                  document.removeEventListener("mouseup", this.stopPan);
-                },
-
-                handleZoom(event) {
-                  event.preventDefault();
-
-                  // Determine zoom direction
-                  const zoomIn = event.deltaY < 0;
-
-                  // Calculate new scale
-                  let newScale = this.scale + (zoomIn ? this.scaleStep : -this.scaleStep);
-
-                  // Clamp scale between min and max values
-                  newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
-
-                  // Only proceed if scale actually changed
-                  if (newScale !== this.scale) {
-                    // Get mouse position relative to the tree
-                    const rect = event.target.getBoundingClientRect();
-                    const mouseX = event.clientX - rect.left;
-                    const mouseY = event.clientY - rect.top;
-
-                    // Calculate scale factor
-                    const scaleFactor = newScale / this.scale;
-
-                    // Update all skill positions relative to mouse position
-                    this.skills.forEach((skill) => {
-                      skill.x = mouseX + (skill.x - mouseX) * scaleFactor;
-                      skill.y = mouseY + (skill.y - mouseY) * scaleFactor;
-                    });
-
-                    const skillElements = document.querySelectorAll(".skill");
-                    skillElements.forEach((element) => {
-                      // element.style.transform = `scale(${newScale})`;
-                      // Adjust the hit area for interactions
-                      // element.style.width = `${60 - 10 / newScale}px`;
-                      // element.style.height = `${60 - 10 / newScale}px`;
-                    });
-
-                    this.scale = newScale;
-                  }
-                },
-
-                exportToJson() {
-                  const exportData = {
-                    Skills: this.skills.map((skill) => {
-                      // Find all connections where this skill is the prerequisite
-                      const dependentSkills = this.connections
-                        .filter((conn) => conn.from === skill.id)
-                        .map((conn) => {
-                          const targetSkill = this.skills.find((s) => s.id === conn.to);
-                          return targetSkill ? targetSkill.name : null;
-                        })
-                        .filter((name) => name !== null);
-
-                      return {
-                        "Skill Name": skill.name,
-                        "Skill Position": `(${Math.round(
-                          (skill.x - this.config.grid.startX) / this.config.grid.spacing + 1
-                        )},${Math.round(
-                          (skill.y - this.config.grid.startY) / this.config.grid.spacing + 1
-                        )})`,
-                        "Skill Position Exact": { x: skill.x, y: skill.y },
-                        "Skill Level": skill.level || 1,
-                        "Skill Damage": skill.damage,
-                        "Skill Description": skill.description,
-                        "Skill Max Points": skill.maxPoints,
-                        "Skill Current Points": skill.currentPoints,
-                        "Skill Image": skill.image.startsWith("data:")
-                          ? this.customImages.find((img) => img.src === skill.image)?.id || skill.image
-                          : skill.image.split("/img/skill")[1],
-                        "Skill Dependencies": dependentSkills, // Add this new field
-                        "Skill Prerequisite": this.getPrerequisite(skill),
-                        "Skill Resources": skill.resources || [],
-                      };
-                    }),
-                    "Class Name": this.currentName,
-                    FullData: this.$data,
-                    // "FullData": {
-                    //     ...this.$data,
-                    //     recentBackgrounds: [], // Clear recent backgrounds from full data
-                    // }
-                  };
-
-                  // Create and trigger download
-                  const dataStr = JSON.stringify(exportData, null, 2);
-                  const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-                  const exportFileDefaultName = "talent-tree-config.json";
-
-                  const linkElement = document.createElement("a");
-                  linkElement.setAttribute("href", dataUri);
-                  linkElement.setAttribute("download", exportFileDefaultName);
-                  linkElement.click();
-                },
-
-                getPrerequisite(skill) {
-                  const connection = this.connections.find((c) => c.to === skill.id);
-                  if (!connection) return "-";
-
-                  const prereqSkill = this.skills.find((s) => s.id === connection.from);
-                  return prereqSkill ? `${prereqSkill.name} (${prereqSkill.level || 1})` : "-";
-                },
-
-                handleSkillTouch(event, skill) {
-                  event.preventDefault();
-
-                  // Only proceed with skill touch handling if we're not panning
-                  if (!this.isPanning) {
-                    if (this.isLinking) {
-                      this.connectSkill(skill);
-                      return;
-                    }
-
-                    this.skills.forEach((s) => {
-                      const el = document.querySelector(`[data-skill-id="${s.id}"]`);
-                      if (el) {
-                        el.style.zIndex = s.id === skill.id ? "1000" : "10";
-                      }
-                    });
-
-                    const currentTime = new Date().getTime();
-                    const tapLength = currentTime - this.lastTap;
-
-                    // Hide all other tooltips before showing the current one
-                    this.skills.forEach((s) => {
-                      if (s.id !== skill.id) {
-                        s.showTooltip = false;
-                      }
-                    });
-
-                    // Show tooltip for current skill
-                    skill.showTooltip = true;
-
-                    // Store touch start position for drag detection
-                    const touch = event.touches[0];
-                    this.touchStartX = touch.clientX;
-                    this.touchStartY = touch.clientY;
-
-                    // Start potential drag operation
-                    this.startDrag(event, skill);
-
-                    // Set a timeout to detect if this is a tap or a drag
-                    this.touchTimeout = setTimeout(() => {
-                      if (!this.isDragging) {
-                        // This was a tap, not a drag
-                        if (tapLength < this.doubleTapDelay && tapLength > 0) {
-                          // Double tap - decrement points (like right click)
-                          if (skill.currentPoints > 0) {
-                            skill.currentPoints--;
-                          }
-                        } else {
-                          // Single tap - toggle actions and increment points
-                          if (skill.currentPoints < skill.maxPoints) {
-                            skill.currentPoints++;
-                          }
-
-                          if (this.isViewMode()) return;
-
-                          this.skills.forEach((s) => {
-                            if (s.id !== skill.id) s.showActions = false;
-                          });
-
-                          if (!skill.showActions) {
-                            skill.showActions = true;
-                          }
-                        }
-                      }
-                    }, 200);
-
-                    this.lastTap = currentTime;
-                  }
-                },
-
-                handleSkillTouchEnd(skill) {},
-
-                handleTouchMove(event) {
-                  if (this.touchTimeout) {
-                    clearTimeout(this.touchTimeout);
-                  }
-
-                  if (event.touches.length === 1) {
-                    const touch = event.touches[0];
-                    const deltaX = touch.clientX - this.touchStartX;
-                    const deltaY = touch.clientY - this.touchStartY;
-
-                    // If we're dragging a skill
-                    if (this.draggedSkill) {
-                      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-                        this.isDragging = true;
-                        this.handleDrag(event);
-                      }
-                    } else {
-                      // If we're panning the tree
-                      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-                        this.skills.forEach((skill) => {
-                          skill.x += deltaX;
-                          skill.y += deltaY;
-                        });
-                        this.touchStartX = touch.clientX;
-                        this.touchStartY = touch.clientY;
-                      }
-                    }
-                  } else if (event.touches.length === 2) {
-                    // Handle pinch zoom
-                    const touch1 = event.touches[0];
-                    const touch2 = event.touches[1];
-                    const currentDistance = Math.hypot(
-                      touch2.clientX - touch1.clientX,
-                      touch2.clientY - touch1.clientY
-                    );
-
-                    if (this.lastTouchDistance) {
-                      const delta = currentDistance - this.lastTouchDistance;
-                      const zoomEvent = new WheelEvent("wheel", {
-                        deltaY: -delta,
-                      });
-                      this.handleZoom(zoomEvent);
-                    }
-                    this.lastTouchDistance = currentDistance;
-                  }
-                },
-
-                handleTouchEnd(event) {
-                  if (this.touchTimeout) {
-                    clearTimeout(this.touchTimeout);
-                  }
-
-                  if (this.draggedSkill) {
-                    this.stopDrag();
-                  }
-
-                  this.touchStartX = null;
-                  this.touchStartY = null;
-                  this.lastTouchDistance = null;
-
-                  // Reset dragging state after a short delay to allow click events to process
-                  setTimeout(() => {
-                    this.isDragging = false;
-                  }, 0);
-                },
-
-                generateRandomTree() {
-                  if (this.skills) {
-                    this.oldSkills = this.skills;
-                    this.oldBackgroundLink = this.currentBackgroundLink;
-                    this.oldName = this.currentName;
-                  }
-
-                  const talentTree = document.querySelector(".talent-tree");
-                  if (talentTree) {
-                    talentTree.style.filter = "blur(100px)";
-                  }
-
-                  fetch("/random_tree")
-                    .then((response) => response.json())
-                    .then((data) => {
-                      this.treePosition = { x: 0, y: 0 };
-                      this.scale = 1;
-
-                      const img = new Image();
-                      img.onload = () => {
-                        if (talentTree) {
-                          setTimeout(() => {
-                            talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${CONFIG.paths.images.backgrounds}${data["Class Image"]}')`;
-                            talentTree.style.filter = "blur(0)";
-                          }, 100);
-                        }
-                      };
-                      img.src = CONFIG.paths.images.backgrounds + data["Class Image"];
-
-                      this.loadSkillsFromData(data["Skills"]);
-                      this.currentBackgroundLink = CONFIG.paths.images.backgrounds + data["Class Image"];
-                      this.currentName = data["Class Name"];
-                      this.currentClassDescription = data["Class Description"];
-
-                      // Save to history after loading
-                      setTimeout(() => {
-                        this.saveToHistory();
-                      }, 1000);
-                    })
-                    .catch((error) => {
-                      console.error("Error fetching random skill tree:", error);
-                      if (talentTree) {
-                        talentTree.style.opacity = "1";
-                        talentTree.style.filter = "blur(0)";
-                      }
-                    });
-                },
-
-                loadSkillsFromData(skillsData) {
-                  this.skills = [];
-                  this.connections = [];
-                  this.skillIdCounter = 0;
-
-                  // First pass: Create a map of skill dependencies and levels
-                  const skillLevels = new Map();
-                  const skillDeps = new Map();
-
-                  skillsData.forEach((skill) => {
-                    const name = skill["Skill Name"];
-                    skillDeps.set(
-                      name,
-                      skill["Skill Prerequisite"] !== "-"
-                        ? skill["Skill Prerequisite"].split(" (")[0]
-                        : null
-                    );
-                  });
-
-                  // Calculate levels based on prerequisites
-                  const calculateLevel = (skillName, visited = new Set()) => {
-                    if (visited.has(skillName)) return 0; // Handle circular dependencies
-                    visited.add(skillName);
-
-                    const prereq = skillDeps.get(skillName);
-                    if (!prereq) return 0;
-
-                    return 1 + calculateLevel(prereq, visited);
-                  };
-
-                  // Assign levels to all skills
-                  skillsData.forEach((skill) => {
-                    const level = calculateLevel(skill["Skill Name"]);
-                    skillLevels.set(skill["Skill Name"], level);
-                  });
-
-                  // Group skills by level
-                  const skillsByLevel = new Map();
-                  skillLevels.forEach((level, name) => {
-                    if (!skillsByLevel.has(level)) {
-                      skillsByLevel.set(level, []);
-                    }
-                    skillsByLevel.get(level).push(name);
-                  });
-
-                  // Calculate positions and create skills
-                  skillsData.forEach((skillData, index) => {
-                    let x, y;
-
-                    if (skillData["Skill Position"]) {
-                      const posMatch = skillData["Skill Position"].match(/\((\d+),\s*(\d+)\)/);
-                      x = parseInt(posMatch[1]);
-                      y = parseInt(posMatch[2]);
-                    } else {
-                      const level = skillLevels.get(skillData["Skill Name"]);
-                      const skillsAtLevel = skillsByLevel.get(level);
-                      const indexAtLevel = skillsAtLevel.indexOf(skillData["Skill Name"]);
-
-                      // Adjust x position to start more to the left
-                      x = level; // Removed the +1 to start from 0
-                      y = indexAtLevel + 1;
-                    }
-
-                    // Adjust starting position and spacing based on viewport width
-                    const isMobile = window.innerWidth <= 768;
-                    const startX = isMobile ? -40 : this.config.grid.startX;
-                    const spacing = isMobile ? 100 : this.config.grid.spacing;
-                    const verticalOffset = 40;
-
-                    const skill = {
-                      id: ++this.skillIdCounter,
-                      name: skillData["Skill Name"],
-                      x: startX + x * spacing, // Removed the -1 since x now starts from 0
-                      y: this.config.grid.startY + (y - 1) * this.config.grid.spacing + verticalOffset,
-                      showActions: false,
-                      level: skillData["Skill Level"],
-                      // damage: skillData["Skill Damage"],
-                      description: skillData["Skill Description"],
-                      maxPoints: skillData["Skill Max Points"] || this.defaultMaxPoints,
-                      currentPoints: index < 4 ? 1 : skillData["Skill Current Points"] || 0,
-                      requiredPoints: skillData["Required Points"] || 0,
-                      image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
-                      shouldAnimate: false,
-                      resources: skillData["Skill Resources"] || [],
-                    };
-
-                    // Add damage to resources if it exists
-                    if (skillData["Skill Damage"]) {
-                      skill.resources.push({
-                        name: "Damage",
-                        value: skillData["Skill Damage"],
-                        color: "#ff4747",
-                      });
-                    }
-                    this.skills.push(skill);
-
-                    // Create connections
-                    if (skillData["Skill Prerequisite"] !== "-") {
-                      const prereqName = skillData["Skill Prerequisite"].split(" (")[0];
-                      const prereqSkill = this.skills.find((s) => s.name === prereqName);
-                      if (prereqSkill) {
-                        this.connections.push({
-                          id: `${prereqSkill.id}-${skill.id}`,
-                          from: prereqSkill.id,
-                          to: skill.id,
-                        });
-                      }
-                    }
-                  });
-
-                  // Trigger animations with a slight delay for each skill
-                  setTimeout(() => {
-                    this.skills.forEach((skill, index) => {
-                      setTimeout(() => {
-                        skill.shouldAnimate = true;
-                      }, index * 50); // 50ms delay between each skill
-                    });
-                  }, 100); // Initial delay of 100ms
-                },
-
-                handleTreeTouchStart(event) {
-                  if (event.touches.length === 1) {
-                    const touch = event.touches[0];
-                    this.isPanning = true;
-                    this.panStart = {
-                      x: touch.clientX - this.treePosition.x,
-                      y: touch.clientY - this.treePosition.y,
-                    };
-                    this.touchStartX = touch.clientX;
-                    this.touchStartY = touch.clientY;
-
-                    // Cancel any ongoing drag operations when panning starts
-                    if (this.draggedSkill) {
-                      this.stopDrag();
-                    }
-                  }
-                },
-
-                handleTreeTouchMove(event) {
-                  if (!this.isPanning || event.touches.length !== 1) return;
-
-                  const touch = event.touches[0];
-                  const deltaX = touch.clientX - this.touchStartX;
-                  const deltaY = touch.clientY - this.touchStartY;
-
-                  // Update all skill positions
+                }
+              }, 200);
+
+              this.lastTap = currentTime;
+            }
+          },
+
+          handleSkillTouchEnd(skill) {},
+
+          handleTouchMove(event) {
+            if (this.touchTimeout) {
+              clearTimeout(this.touchTimeout);
+            }
+
+            if (event.touches.length === 1) {
+              const touch = event.touches[0];
+              const deltaX = touch.clientX - this.touchStartX;
+              const deltaY = touch.clientY - this.touchStartY;
+
+              // If we're dragging a skill
+              if (this.draggedSkill) {
+                if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                  this.isDragging = true;
+                  this.handleDrag(event);
+                }
+              } else {
+                // If we're panning the tree
+                if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
                   this.skills.forEach((skill) => {
                     skill.x += deltaX;
                     skill.y += deltaY;
                   });
-
-                  // Force grid recomputation
-                  if (this.showGlobalGrid) {
-                    this.$forceUpdate();
-                  }
-
                   this.touchStartX = touch.clientX;
                   this.touchStartY = touch.clientY;
-                },
+                }
+              }
+            } else if (event.touches.length === 2) {
+              // Handle pinch zoom
+              const touch1 = event.touches[0];
+              const touch2 = event.touches[1];
+              const currentDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+              );
 
-                handleTreeTouchEnd() {
-                  this.isPanning = false;
-                  this.touchStartX = null;
-                  this.touchStartY = null;
-                },
+              if (this.lastTouchDistance) {
+                const delta = currentDistance - this.lastTouchDistance;
+                const zoomEvent = new WheelEvent("wheel", {
+                  deltaY: -delta,
+                });
+                this.handleZoom(zoomEvent);
+              }
+              this.lastTouchDistance = currentDistance;
+            }
+          },
 
-                getTooltipPosition(skill) {
-                  // Get the center position of the skill relative to the viewport
-                  const skillCenter = skill.x + 30; // 30 is half the skill width
-                  const viewportCenter = window.innerWidth / 2;
+          handleTouchEnd(event) {
+            if (this.touchTimeout) {
+              clearTimeout(this.touchTimeout);
+            }
 
-                  // If skill is in the right half of the screen, show tooltip on the left
-                  // Otherwise, show it on the right
-                  return skillCenter > viewportCenter ? "tooltip-left" : "tooltip-right";
-                },
+            if (this.draggedSkill) {
+              this.stopDrag();
+            }
 
-                generateTreeFromPrompt() {
-                  this.isLoading = true;
-                  const userPrompt = this.inputText;
-                  const talentTree = document.querySelector(".talent-tree");
+            this.touchStartX = null;
+            this.touchStartY = null;
+            this.lastTouchDistance = null;
 
+            // Reset dragging state after a short delay to allow click events to process
+            setTimeout(() => {
+              this.isDragging = false;
+            }, 0);
+          },
+
+          generateRandomTree() {
+            if (this.skills) {
+              this.oldSkills = this.skills;
+              this.oldBackgroundLink = this.currentBackgroundLink;
+              this.oldName = this.currentName;
+            }
+
+            const talentTree = document.querySelector(".talent-tree");
+            if (talentTree) {
+              talentTree.style.filter = "blur(100px)";
+            }
+
+            fetch("/random_tree")
+              .then((response) => response.json())
+              .then((data) => {
+                this.treePosition = { x: 0, y: 0 };
+                this.scale = 1;
+
+                const img = new Image();
+                img.onload = () => {
                   if (talentTree) {
-                    talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 1.9)), ${
-                      talentTree.style.backgroundImage.split("linear-gradient")[1]
-                    }`;
+                    setTimeout(() => {
+                      talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${CONFIG.paths.images.backgrounds}${data["Class Image"]}')`;
+                      talentTree.style.filter = "blur(0)";
+                    }, 100);
                   }
+                };
+                img.src = CONFIG.paths.images.backgrounds + data["Class Image"];
 
-                  // Clear any future history states if we're not at the end
-                  if (this.historyIndex < this.history.length - 1) {
-                    this.history = this.history.slice(0, this.historyIndex + 1);
-                  }
+                this.loadSkillsFromData(data["Skills"]);
+                this.currentBackgroundLink =
+                  CONFIG.paths.images.backgrounds + data["Class Image"];
+                this.currentName = data["Class Name"];
+                this.currentClassDescription = data["Class Description"];
 
-                  // Check if we're in local development
-                  if (window.location.href.includes("127.0.0.1")) {
-                    // Load test.json instead
-                    fetch("/src/app/config/test.json")
-                      .then((response) => response.json())
-                      .then((data) => {
-                        this.handleGeneratedData(data);
-                      })
-                      .catch((error) => {
-                        this.handleGenerationError(error);
-                      });
-                  } else {
-                    // Original API endpoint logic
-                    fetch("/generate_tree_from_prompt_old", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({ userPrompt: userPrompt }),
-                    })
-                      .then((response) => response.json())
-                      .then((data) => {
-                        this.handleGeneratedData(data);
-                      })
-                      .catch((error) => {
-                        this.handleGenerationError(error);
-                      });
-                  }
+                // Save to history after loading
+                setTimeout(() => {
+                  this.saveToHistory();
+                }, 1000);
+              })
+              .catch((error) => {
+                console.error("Error fetching random skill tree:", error);
+                if (talentTree) {
+                  talentTree.style.opacity = "1";
+                  talentTree.style.filter = "blur(0)";
+                }
+              });
+          },
+
+          loadSkillsFromData(skillsData) {
+            this.skills = [];
+            this.connections = [];
+            this.skillIdCounter = 0;
+
+            // First pass: Create a map of skill dependencies and levels
+            const skillLevels = new Map();
+            const skillDeps = new Map();
+
+            skillsData.forEach((skill) => {
+              const name = skill["Skill Name"];
+              skillDeps.set(
+                name,
+                skill["Skill Prerequisite"] !== "-"
+                  ? skill["Skill Prerequisite"].split(" (")[0]
+                  : null
+              );
+            });
+
+            // Calculate levels based on prerequisites
+            const calculateLevel = (skillName, visited = new Set()) => {
+              if (visited.has(skillName)) return 0; // Handle circular dependencies
+              visited.add(skillName);
+
+              const prereq = skillDeps.get(skillName);
+              if (!prereq) return 0;
+
+              return 1 + calculateLevel(prereq, visited);
+            };
+
+            // Assign levels to all skills
+            skillsData.forEach((skill) => {
+              const level = calculateLevel(skill["Skill Name"]);
+              skillLevels.set(skill["Skill Name"], level);
+            });
+
+            // Group skills by level
+            const skillsByLevel = new Map();
+            skillLevels.forEach((level, name) => {
+              if (!skillsByLevel.has(level)) {
+                skillsByLevel.set(level, []);
+              }
+              skillsByLevel.get(level).push(name);
+            });
+
+            // Calculate positions and create skills
+            skillsData.forEach((skillData, index) => {
+              let x, y;
+
+              if (skillData["Skill Position"]) {
+                const posMatch =
+                  skillData["Skill Position"].match(/\((\d+),\s*(\d+)\)/);
+                x = parseInt(posMatch[1]);
+                y = parseInt(posMatch[2]);
+              } else {
+                const level = skillLevels.get(skillData["Skill Name"]);
+                const skillsAtLevel = skillsByLevel.get(level);
+                const indexAtLevel = skillsAtLevel.indexOf(
+                  skillData["Skill Name"]
+                );
+
+                // Adjust x position to start more to the left
+                x = level; // Removed the +1 to start from 0
+                y = indexAtLevel + 1;
+              }
+
+              // Adjust starting position and spacing based on viewport width
+              const isMobile = window.innerWidth <= 768;
+              const startX = isMobile ? -40 : this.config.grid.startX;
+              const spacing = isMobile ? 100 : this.config.grid.spacing;
+              const verticalOffset = 40;
+
+              const skill = {
+                id: ++this.skillIdCounter,
+                name: skillData["Skill Name"],
+                x: startX + x * spacing, // Removed the -1 since x now starts from 0
+                y:
+                  this.config.grid.startY +
+                  (y - 1) * this.config.grid.spacing +
+                  verticalOffset,
+                showActions: false,
+                level: skillData["Skill Level"],
+                // damage: skillData["Skill Damage"],
+                description: skillData["Skill Description"],
+                maxPoints:
+                  skillData["Skill Max Points"] || this.defaultMaxPoints,
+                currentPoints:
+                  index < 4 ? 1 : skillData["Skill Current Points"] || 0,
+                requiredPoints: skillData["Required Points"] || 0,
+                image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
+                shouldAnimate: false,
+                resources: skillData["Skill Resources"] || [],
+              };
+
+              // Add damage to resources if it exists
+              if (skillData["Skill Damage"]) {
+                skill.resources.push({
+                  name: "Damage",
+                  value: skillData["Skill Damage"],
+                  color: "#ff4747",
+                });
+              }
+              this.skills.push(skill);
+
+              // Create connections
+              if (skillData["Skill Prerequisite"] !== "-") {
+                const prereqName =
+                  skillData["Skill Prerequisite"].split(" (")[0];
+                const prereqSkill = this.skills.find(
+                  (s) => s.name === prereqName
+                );
+                if (prereqSkill) {
+                  this.connections.push({
+                    id: `${prereqSkill.id}-${skill.id}`,
+                    from: prereqSkill.id,
+                    to: skill.id,
+                  });
+                }
+              }
+            });
+
+            // Trigger animations with a slight delay for each skill
+            setTimeout(() => {
+              this.skills.forEach((skill, index) => {
+                setTimeout(() => {
+                  skill.shouldAnimate = true;
+                }, index * 50); // 50ms delay between each skill
+              });
+            }, 100); // Initial delay of 100ms
+          },
+
+          handleTreeTouchStart(event) {
+            if (event.touches.length === 1) {
+              const touch = event.touches[0];
+              this.isPanning = true;
+              this.panStart = {
+                x: touch.clientX - this.treePosition.x,
+                y: touch.clientY - this.treePosition.y,
+              };
+              this.touchStartX = touch.clientX;
+              this.touchStartY = touch.clientY;
+
+              // Cancel any ongoing drag operations when panning starts
+              if (this.draggedSkill) {
+                this.stopDrag();
+              }
+            }
+          },
+
+          handleTreeTouchMove(event) {
+            if (!this.isPanning || event.touches.length !== 1) return;
+
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - this.touchStartX;
+            const deltaY = touch.clientY - this.touchStartY;
+
+            // Update all skill positions
+            this.skills.forEach((skill) => {
+              skill.x += deltaX;
+              skill.y += deltaY;
+            });
+
+            // Force grid recomputation
+            if (this.showGlobalGrid) {
+              this.$forceUpdate();
+            }
+
+            this.touchStartX = touch.clientX;
+            this.touchStartY = touch.clientY;
+          },
+
+          handleTreeTouchEnd() {
+            this.isPanning = false;
+            this.touchStartX = null;
+            this.touchStartY = null;
+          },
+
+          getTooltipPosition(skill) {
+            // Get the center position of the skill relative to the viewport
+            const skillCenter = skill.x + 30; // 30 is half the skill width
+            const viewportCenter = window.innerWidth / 2;
+
+            // If skill is in the right half of the screen, show tooltip on the left
+            // Otherwise, show it on the right
+            return skillCenter > viewportCenter
+              ? "tooltip-left"
+              : "tooltip-right";
+          },
+
+          generateTreeFromPrompt() {
+            this.isLoading = true;
+            const userPrompt = this.inputText;
+            const talentTree = document.querySelector(".talent-tree");
+
+            if (talentTree) {
+              talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 1.9)), ${
+                talentTree.style.backgroundImage.split("linear-gradient")[1]
+              }`;
+            }
+
+            // Clear any future history states if we're not at the end
+            if (this.historyIndex < this.history.length - 1) {
+              this.history = this.history.slice(0, this.historyIndex + 1);
+            }
+
+            // Check if we're in local development
+            if (window.location.href.includes("127.0.0.1")) {
+              // Load test.json instead
+              fetch("/src/app/config/test.json")
+                .then((response) => response.json())
+                .then((data) => {
+                  this.handleGeneratedData(data);
+                })
+                .catch((error) => {
+                  this.handleGenerationError(error);
+                });
+            } else {
+              // Original API endpoint logic
+              fetch("/generate_tree_from_prompt_old", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
                 },
+                body: JSON.stringify({ userPrompt: userPrompt }),
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  this.handleGeneratedData(data);
+                })
+                .catch((error) => {
+                  this.handleGenerationError(error);
+                });
+            }
+          },
 
-                // Add these helper methods to handle the response
-                handleGeneratedData(data) {
-                  const talentTree = document.querySelector(".talent-tree");
+          // Add these helper methods to handle the response
+          handleGeneratedData(data) {
+            const talentTree = document.querySelector(".talent-tree");
+            this.treePosition = { x: 0, y: 0 };
+            this.scale = 1;
+
+            if (talentTree) {
+              talentTree.style.filter = "blur(10px)";
+
+              const img = new Image();
+              img.onload = () => {
+                setTimeout(() => {
+                  talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${
+                    CONFIG.paths.images.backgrounds
+                  }${this.parseBackgroundImage(data["Class Image"])}')`;
+                  talentTree.style.filter = "blur(0)";
+                }, 100);
+              };
+              img.src =
+                CONFIG.paths.images.backgrounds +
+                this.parseBackgroundImage(data["Class Image"]);
+            }
+
+            this.loadSkillsFromData(this.parseSkills(data["Skills"]));
+            this.currentBackgroundLink =
+              CONFIG.paths.images.backgrounds +
+              this.parseBackgroundImage(data["Class Image"]);
+            this.currentName = data["Class Name"];
+            this.currentClassDescription = data["Class Description"];
+            this.isLoading = false;
+
+            // Save to history after loading
+            setTimeout(() => {
+              this.saveToHistory();
+              this.historyIndex = this.history.length - 1;
+            }, 1000);
+          },
+
+          handleGenerationError(error) {
+            console.error("Error generating skill tree:", error);
+            this.isLoading = false;
+            this.currentName = "Prompt idea didn't work, please try another.";
+            const talentTree = document.querySelector(".talent-tree");
+            if (talentTree) {
+              talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), ${
+                talentTree.style.backgroundImage.split("linear-gradient")[1]
+              }`;
+              talentTree.style.filter = "blur(0)";
+            }
+          },
+
+          // Add the parsing functions
+          parseSkills(skills) {
+            let validImagesString =
+              "/axe-hammer-grey.png, /fire-orb.png, /fire-rock.png, /flaming-spear.png, /flaming-staff.png, /golden-arrow.png, /gray-spear.png, /ornate-spear.png, /skull-blue.png, /small-trident.png, /spectral-dagger.png, /water-sword.png";
+            validImagesString = validImagesString.replace("/", "");
+            const validImagesList = validImagesString.split(", /");
+            const defaultImageString = "/fire-rock.png";
+
+            return skills.map((skill) => {
+              const skillImage = skill["Skill Image"].replace("/", "");
+              if (!validImagesList.includes(skillImage)) {
+                skill["Skill Image"] = defaultImageString;
+              }
+              return skill;
+            });
+          },
+
+          parseBackgroundImage(backgroundImage) {
+            let validImagesString =
+              "/grass-ancient.jpg, /desert-academy-ruins.jpg, /purple-spectral-rocks.png";
+            validImagesString = validImagesString.replace("/", "");
+            const validImagesList = validImagesString.split(", /");
+            const defaultImageString = "/grass-ancient.jpg";
+
+            return validImagesList.includes(backgroundImage)
+              ? backgroundImage
+              : defaultImageString;
+          },
+
+          saveToHistory() {
+            // Don't save if there's no skills (prevents empty initial state)
+            if (!this.skills || this.skills.length === 0) {
+              return;
+            }
+
+            // Remove any future states if we're not at the end of history
+            if (this.historyIndex < this.history.length - 1) {
+              this.history = this.history.slice(0, this.historyIndex + 1);
+            }
+
+            // Create a deep copy of the current state
+            const state = {
+              skills: JSON.parse(JSON.stringify(this.skills)),
+              connections: JSON.parse(JSON.stringify(this.connections)),
+              currentName: this.currentName,
+              currentBackgroundLink: this.currentBackgroundLink,
+              skillIdCounter: this.skillIdCounter,
+              timestamp: new Date().toISOString(),
+              maxPoints: this.maxPoints,
+            };
+
+            // Only add state if it's different from the previous state
+            const previousState = this.history[this.history.length - 1];
+            if (
+              !previousState ||
+              JSON.stringify(previousState) !== JSON.stringify(state)
+            ) {
+              this.history.push(state);
+
+              // Remove oldest state if we exceed maxHistorySize
+              if (this.history.length > this.maxHistorySize) {
+                this.history.shift();
+                this.historyIndex = Math.max(0, this.historyIndex - 1);
+              } else {
+                this.historyIndex++;
+              }
+            }
+          },
+
+          undo() {
+            if (!this.canUndo) {
+              console.warn("Undo blocked: canUndo is false");
+              return;
+            }
+
+            const previousState = this.history[this.historyIndex - 1];
+
+            if (
+              !previousState ||
+              !previousState.skills ||
+              previousState.skills.length === 0
+            ) {
+              console.warn("Invalid previous state:", previousState);
+              return;
+            }
+
+            console.log("Restoring to state:", previousState);
+            this.historyIndex--;
+            this.restoreState(previousState);
+          },
+
+          redo() {
+            if (this.canRedo) {
+              this.historyIndex++;
+              this.restoreState(this.history[this.historyIndex]);
+            }
+          },
+
+          restoreState(state) {
+            this.skills = JSON.parse(JSON.stringify(state.skills));
+            this.connections = JSON.parse(JSON.stringify(state.connections));
+            this.currentName = state.currentName;
+            this.currentBackgroundLink = state.currentBackgroundLink;
+
+            // Update background
+            const talentTree = document.querySelector(".talent-tree");
+            if (talentTree) {
+              talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('${this.currentBackgroundLink}')`;
+            }
+          },
+
+          handleEnterKey(event) {
+            // Prevent action if already loading or input is empty
+            if (this.isLoading || !this.inputText.trim()) {
+              return;
+            }
+
+            // Prevent default to avoid any potential form submission
+            event.preventDefault();
+
+            // Call generate function
+            this.generateTreeFromPrompt();
+          },
+
+          showGenerateTooltip(event, text) {
+            if (!("ontouchstart" in window)) {
+              const tooltip = document.createElement("div");
+              tooltip.className = "action-btn-tooltip generate-tooltip";
+              tooltip.textContent = text;
+              event.target.appendChild(tooltip);
+            }
+          },
+
+          hideGenerateTooltip(event) {
+            const tooltip = event.target.querySelector(".generate-tooltip");
+            if (tooltip) {
+              tooltip.remove();
+            }
+          },
+
+          openImageSelector() {
+            this.showImageSelector = true;
+            // Find the current image in allImages
+            const currentImage = this.allImages.find(
+              (img) => img.src === this.editingSkill.image
+            );
+            this.selectedImage = currentImage ? currentImage.id : null;
+          },
+
+          selectImage(image) {
+            this.selectedImage = image.id;
+            // Use the image src directly instead of trying to construct a path
+            this.editingSkill.image = image.src;
+          },
+
+          saveImageSelection() {
+            // Don't modify the image path - use it as is
+            this.editingSkill.image = this.editingSkill.image;
+            this.showImageSelector = false;
+
+            // Add a class to temporarily disable the tooltip
+            const previewEl = document.querySelector(".skill-preview");
+            if (previewEl) {
+              previewEl.classList.add("hide-tooltip");
+            }
+          },
+
+          cancelImageSelection() {
+            this.showImageSelector = false;
+            this.selectedImage = null;
+          },
+
+          loadTreeById(treeId) {
+            fetch(`/api/tree/${treeId}`, {
+              headers: {
+                Accept: "application/json",
+              },
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.error) {
+                  console.error("Error loading tree:", data.error);
+                  return;
+                }
+
+                // Restore the tree state
+                this.skills = data.skills;
+                this.connections = data.connections;
+                this.currentName = data.currentName;
+                this.currentBackgroundLink = data.currentBackgroundLink;
+                this.skillIdCounter = data.skillIdCounter;
+
+                if (data.name) {
+                  document.title = `${data.name} | RPG Skill Tree Maker`;
+                  const metaDescription = document.querySelector(
+                    'meta[name="description"]'
+                  );
+                  if (metaDescription) {
+                    metaDescription.setAttribute(
+                      "content",
+                      `Check out this ${data.name} skill tree created with RPG Skill Tree Maker. You can view or customize it in a drag and drop editor, or download the JSON file.`
+                    );
+                  }
+                }
+
+                // Update background
+                const talentTree = document.querySelector(".talent-tree");
+                if (talentTree) {
+                  talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${this.currentBackgroundLink}')`;
+                }
+
+                // Mark tree as loaded
+                setTimeout(() => {
+                  talentTree.classList.add("loaded");
+                }, 100);
+              })
+              .catch((error) => console.error("Error loading tree:", error));
+          },
+
+          shareTree() {
+            const state = {
+              skills: this.skills,
+              connections: this.connections,
+              currentName: this.currentName,
+              currentBackgroundLink: this.currentBackgroundLink,
+              skillIdCounter: this.skillIdCounter,
+              timestamp: new Date().toISOString(),
+              id: crypto.randomUUID(),
+            };
+
+            fetch("/save_tree", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(state),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                const shareableUrl = `${window.location.origin}/tree/${state.id}?mode=view`;
+
+                const modal = document.createElement("div");
+                modal.className = "share-modal";
+                modal.innerHTML = `
+                                <button class="close-btn">✕</button>
+                                <h3>Share Your Skill Tree</h3>
+                                <div class="share-link">${shareableUrl}</div>
+                                <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
+                                    Copy Link
+                                </button>
+                            `;
+                document.body.appendChild(modal);
+
+                // Update click handler to include close button
+                const removeModal = (e) => {
+                  if (
+                    e.target === modal ||
+                    e.target.classList.contains("close-btn")
+                  ) {
+                    document.body.removeChild(modal);
+                    document.removeEventListener("click", removeModal);
+                  }
+                };
+                document.addEventListener("click", removeModal);
+
+                // Add specific handler for close button
+                const closeBtn = modal.querySelector(".close-btn");
+                closeBtn.addEventListener("click", () => {
+                  document.body.removeChild(modal);
+                  document.removeEventListener("click", removeModal);
+                });
+              })
+              .catch((error) => console.error("Error sharing tree:", error));
+          },
+          importFromJson() {
+            // Create file input element
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.accept = ".json";
+
+            fileInput.onchange = (e) => {
+              const file = e.target.files[0];
+              const reader = new FileReader();
+
+              reader.onload = (event) => {
+                try {
+                  const data = JSON.parse(event.target.result);
+
+                  // Reset tree position and scale
                   this.treePosition = { x: 0, y: 0 };
                   this.scale = 1;
 
-                  if (talentTree) {
-                    talentTree.style.filter = "blur(10px)";
+                  // Check if we have the full data state
+                  if (data.FullData) {
+                    this.showLoadModal = true;
+                    this.loadedData = data;
+                    //  Do loading from view modal buttons
+                  } else {
+                    // Fallback to original import logic
 
-                    const img = new Image();
-                    img.onload = () => {
-                      setTimeout(() => {
-                        talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${
-                          CONFIG.paths.images.backgrounds
-                        }${this.parseBackgroundImage(data["Class Image"])}')`;
-                        talentTree.style.filter = "blur(0)";
-                      }, 100);
-                    };
-                    img.src =
-                      CONFIG.paths.images.backgrounds + this.parseBackgroundImage(data["Class Image"]);
-                  }
+                    // Load the skills using existing loadSkillsFromData method
+                    this.loadSkillsFromData(data.Skills);
 
-                  this.loadSkillsFromData(this.parseSkills(data["Skills"]));
-                  this.currentBackgroundLink =
-                    CONFIG.paths.images.backgrounds + this.parseBackgroundImage(data["Class Image"]);
-                  this.currentName = data["Class Name"];
-                  this.currentClassDescription = data["Class Description"];
-                  this.isLoading = false;
-
-                  // Save to history after loading
-                  setTimeout(() => {
-                    this.saveToHistory();
-                    this.historyIndex = this.history.length - 1;
-                  }, 1000);
-                },
-
-                handleGenerationError(error) {
-                  console.error("Error generating skill tree:", error);
-                  this.isLoading = false;
-                  this.currentName = "Prompt idea didn't work, please try another.";
-                  const talentTree = document.querySelector(".talent-tree");
-                  if (talentTree) {
-                    talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), ${
-                      talentTree.style.backgroundImage.split("linear-gradient")[1]
-                    }`;
-                    talentTree.style.filter = "blur(0)";
-                  }
-                },
-
-                // Add the parsing functions
-                parseSkills(skills) {
-                  let validImagesString =
-                    "/axe-hammer-grey.png, /fire-orb.png, /fire-rock.png, /flaming-spear.png, /flaming-staff.png, /golden-arrow.png, /gray-spear.png, /ornate-spear.png, /skull-blue.png, /small-trident.png, /spectral-dagger.png, /water-sword.png";
-                  validImagesString = validImagesString.replace("/", "");
-                  const validImagesList = validImagesString.split(", /");
-                  const defaultImageString = "/fire-rock.png";
-
-                  return skills.map((skill) => {
-                    const skillImage = skill["Skill Image"].replace("/", "");
-                    if (!validImagesList.includes(skillImage)) {
-                      skill["Skill Image"] = defaultImageString;
-                    }
-                    return skill;
-                  });
-                },
-
-                parseBackgroundImage(backgroundImage) {
-                  let validImagesString =
-                    "/grass-ancient.jpg, /desert-academy-ruins.jpg, /purple-spectral-rocks.png";
-                  validImagesString = validImagesString.replace("/", "");
-                  const validImagesList = validImagesString.split(", /");
-                  const defaultImageString = "/grass-ancient.jpg";
-
-                  return validImagesList.includes(backgroundImage) ? backgroundImage : defaultImageString;
-                },
-
-                saveToHistory() {
-                  // Don't save if there's no skills (prevents empty initial state)
-                  if (!this.skills || this.skills.length === 0) {
-                    return;
-                  }
-
-                  // Remove any future states if we're not at the end of history
-                  if (this.historyIndex < this.history.length - 1) {
-                    this.history = this.history.slice(0, this.historyIndex + 1);
-                  }
-
-                  // Create a deep copy of the current state
-                  const state = {
-                    skills: JSON.parse(JSON.stringify(this.skills)),
-                    connections: JSON.parse(JSON.stringify(this.connections)),
-                    currentName: this.currentName,
-                    currentBackgroundLink: this.currentBackgroundLink,
-                    skillIdCounter: this.skillIdCounter,
-                    timestamp: new Date().toISOString(),
-                    maxPoints: this.maxPoints,
-                  };
-
-                  // Only add state if it's different from the previous state
-                  const previousState = this.history[this.history.length - 1];
-                  if (!previousState || JSON.stringify(previousState) !== JSON.stringify(state)) {
-                    this.history.push(state);
-
-                    // Remove oldest state if we exceed maxHistorySize
-                    if (this.history.length > this.maxHistorySize) {
-                      this.history.shift();
-                      this.historyIndex = Math.max(0, this.historyIndex - 1);
-                    } else {
-                      this.historyIndex++;
-                    }
-                  }
-                },
-
-                undo() {
-                  if (!this.canUndo) {
-                    console.warn("Undo blocked: canUndo is false");
-                    return;
-                  }
-
-                  const previousState = this.history[this.historyIndex - 1];
-
-                  if (!previousState || !previousState.skills || previousState.skills.length === 0) {
-                    console.warn("Invalid previous state:", previousState);
-                    return;
-                  }
-
-                  console.log("Restoring to state:", previousState);
-                  this.historyIndex--;
-                  this.restoreState(previousState);
-                },
-
-                redo() {
-                  if (this.canRedo) {
-                    this.historyIndex++;
-                    this.restoreState(this.history[this.historyIndex]);
-                  }
-                },
-
-                restoreState(state) {
-                  this.skills = JSON.parse(JSON.stringify(state.skills));
-                  this.connections = JSON.parse(JSON.stringify(state.connections));
-                  this.currentName = state.currentName;
-                  this.currentBackgroundLink = state.currentBackgroundLink;
-
-                  // Update background
-                  const talentTree = document.querySelector(".talent-tree");
-                  if (talentTree) {
-                    talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('${this.currentBackgroundLink}')`;
-                  }
-                },
-
-                handleEnterKey(event) {
-                  // Prevent action if already loading or input is empty
-                  if (this.isLoading || !this.inputText.trim()) {
-                    return;
-                  }
-
-                  // Prevent default to avoid any potential form submission
-                  event.preventDefault();
-
-                  // Call generate function
-                  this.generateTreeFromPrompt();
-                },
-
-                showGenerateTooltip(event, text) {
-                  if (!("ontouchstart" in window)) {
-                    const tooltip = document.createElement("div");
-                    tooltip.className = "action-btn-tooltip generate-tooltip";
-                    tooltip.textContent = text;
-                    event.target.appendChild(tooltip);
-                  }
-                },
-
-                hideGenerateTooltip(event) {
-                  const tooltip = event.target.querySelector(".generate-tooltip");
-                  if (tooltip) {
-                    tooltip.remove();
-                  }
-                },
-
-                openImageSelector() {
-                  this.showImageSelector = true;
-                  // Find the current image in allImages
-                  const currentImage = this.allImages.find((img) => img.src === this.editingSkill.image);
-                  this.selectedImage = currentImage ? currentImage.id : null;
-                },
-
-                selectImage(image) {
-                  this.selectedImage = image.id;
-                  // Use the image src directly instead of trying to construct a path
-                  this.editingSkill.image = image.src;
-                },
-
-                saveImageSelection() {
-                  // Don't modify the image path - use it as is
-                  this.editingSkill.image = this.editingSkill.image;
-                  this.showImageSelector = false;
-
-                  // Add a class to temporarily disable the tooltip
-                  const previewEl = document.querySelector(".skill-preview");
-                  if (previewEl) {
-                    previewEl.classList.add("hide-tooltip");
-                  }
-                },
-
-                cancelImageSelection() {
-                  this.showImageSelector = false;
-                  this.selectedImage = null;
-                },
-
-                loadTreeById(treeId) {
-                  fetch(`/api/tree/${treeId}`, {
-                    headers: {
-                      Accept: "application/json",
-                    },
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      if (data.error) {
-                        console.error("Error loading tree:", data.error);
-                        return;
-                      }
-
-                      // Restore the tree state
-                      this.skills = data.skills;
-                      this.connections = data.connections;
-                      this.currentName = data.currentName;
-                      this.currentBackgroundLink = data.currentBackgroundLink;
-                      this.skillIdCounter = data.skillIdCounter;
-
-                      if (data.name) {
-                        document.title = `${data.name} | RPG Skill Tree Maker`;
-                        const metaDescription = document.querySelector('meta[name="description"]');
-                        if (metaDescription) {
-                          metaDescription.setAttribute(
-                            "content",
-                            `Check out this ${data.name} skill tree created with RPG Skill Tree Maker. You can view or customize it in a drag and drop editor, or download the JSON file.`
-                          );
-                        }
-                      }
-
-                      // Update background
+                    // Update background if provided
+                    if (data["Class Image"]) {
                       const talentTree = document.querySelector(".talent-tree");
                       if (talentTree) {
-                        talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${this.currentBackgroundLink}')`;
-                      }
+                        talentTree.style.filter = "blur(10px)";
 
-                      // Mark tree as loaded
-                      setTimeout(() => {
-                        talentTree.classList.add("loaded");
-                      }, 100);
-                    })
-                    .catch((error) => console.error("Error loading tree:", error));
-                },
-
-                shareTree() {
-                  const state = {
-                    skills: this.skills,
-                    connections: this.connections,
-                    currentName: this.currentName,
-                    currentBackgroundLink: this.currentBackgroundLink,
-                    skillIdCounter: this.skillIdCounter,
-                    timestamp: new Date().toISOString(),
-                    id: crypto.randomUUID(),
-                  };
-
-                  fetch("/save_tree", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(state),
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      const shareableUrl = `${window.location.origin}/tree/${state.id}?mode=view`;
-
-                      const modal = document.createElement("div");
-                      modal.className = "share-modal";
-                      modal.innerHTML = `
-                                      <button class="close-btn">✕</button>
-                                      <h3>Share Your Skill Tree</h3>
-                                      <div class="share-link">${shareableUrl}</div>
-                                      <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
-                                          Copy Link
-                                      </button>
-                                  `;
-                      document.body.appendChild(modal);
-
-                      // Update click handler to include close button
-                      const removeModal = (e) => {
-                        if (e.target === modal || e.target.classList.contains("close-btn")) {
-                          document.body.removeChild(modal);
-                          document.removeEventListener("click", removeModal);
-                        }
-                      };
-                      document.addEventListener("click", removeModal);
-
-                      // Add specific handler for close button
-                      const closeBtn = modal.querySelector(".close-btn");
-                      closeBtn.addEventListener("click", () => {
-                        document.body.removeChild(modal);
-                        document.removeEventListener("click", removeModal);
-                      });
-                    })
-                    .catch((error) => console.error("Error sharing tree:", error));
-                },
-                importFromJson() {
-                  // Create file input element
-                  const fileInput = document.createElement("input");
-                  fileInput.type = "file";
-                  fileInput.accept = ".json";
-
-                  fileInput.onchange = (e) => {
-                    const file = e.target.files[0];
-                    const reader = new FileReader();
-
-                    reader.onload = (event) => {
-                      try {
-                        const data = JSON.parse(event.target.result);
-
-                        // Reset tree position and scale
-                        this.treePosition = { x: 0, y: 0 };
-                        this.scale = 1;
-
-                        // Check if we have the full data state
-                        if (data.FullData) {
-                          this.showLoadModal = true;
-                          this.loadedData = data;
-                          //  Do loading from view modal buttons
-                        } else {
-                          // Fallback to original import logic
-
-                          // Load the skills using existing loadSkillsFromData method
-                          this.loadSkillsFromData(data.Skills);
-
-                          // Update background if provided
-                          if (data["Class Image"]) {
-                            const talentTree = document.querySelector(".talent-tree");
-                            if (talentTree) {
-                              talentTree.style.filter = "blur(10px)";
-
-                              const img = new Image();
-                              img.onload = () => {
-                                setTimeout(() => {
-                                  talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${
-                                    this.config.paths.images.backgrounds
-                                  }${this.parseBackgroundImage(data["Class Image"])}')`;
-                                  talentTree.style.filter = "blur(0)";
-                                }, 100);
-                              };
-                              img.src =
-                                this.config.paths.images.backgrounds +
-                                this.parseBackgroundImage(data["Class Image"]);
-                              this.currentBackgroundLink =
-                                this.config.paths.images.backgrounds +
-                                this.parseBackgroundImage(data["Class Image"]);
-                            }
-                          }
-
-                          // Update class name if provided
-                          if (data["Class Name"]) {
-                            this.currentName = data["Class Name"];
-                          }
-
-                          // Update class description if provided
-                          if (data["Class Description"]) {
-                            this.currentClassDescription = data["Class Description"];
-                          }
-
-                          // Save to history after loading
+                        const img = new Image();
+                        img.onload = () => {
                           setTimeout(() => {
-                            this.saveToHistory();
-                          }, 1000);
-      <<<<<<< HEAD
-                      },
-                      handleBackgroundUpload(event) {
-                          const file = event.target.files[0];
-                          if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (e) => {
-                                  const imageData = {
-                                      id: `bg_${Date.now()}`,
-                                      src: e.target.result,
-                                      name: file.name,
-                                      type: 'background'
-                                  };
-
-                                  // Update recent backgrounds
-                                  this.recentBackgrounds.unshift(imageData);
-                                  // Keep only the 3 most recent
-                                  this.recentBackgrounds = this.recentBackgrounds.slice(0, 3);
-                                  // Save to localStorage
-                                  localStorage.setItem('recentBackgrounds', JSON.stringify(this.recentBackgrounds));
-
-                                  // Save to localStorage
-                                  const customImages = JSON.parse(localStorage.getItem('customImages') || '[]');
-                                  customImages.push(imageData);
-                                  localStorage.setItem('customImages', JSON.stringify(customImages));
-
-                                  // Update background
-                                  this.currentBackgroundLink = imageData.src;
-                                  this.updateBackground();
-                              };
-                              reader.readAsDataURL(file);
-                          }
-                      },
-
-                      // updateBackground() {
-                      //     const talentTree = document.querySelector('.talent-tree');
-                      //     if (talentTree && this.currentBackgroundLink) {
-                      //         talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, ${this.overlayOpacity / 100}), rgba(0, 0, 0, ${this.overlayOpacity / 100})), url('${this.currentBackgroundLink}')`;
-                      //     }
-                      // },
-
-                      // Add these new methods
-                      handleSelection(event) {
-                              // Check if we're interacting with a skill or other UI element
-                          if (!event.target.classList.contains('talent-tree')) { // event.target.classList is undefined if dragged off screen. maybe use this to shift the view
-                              return;
-                          }
-                          const moveThreshold = 5; // pixels
-                            const deltaX = event.offsetX - this.initialClick.x;
-                          const deltaY = event.offsetY - this.initialClick.y;
-
-                          if (Math.abs(deltaX) > moveThreshold || Math.abs(deltaY) > moveThreshold) {
-                              // Create selection box on first movement
-                              this.selectionBox = {
-                                  x: this.initialClick.x,
-                                  y: this.initialClick.y,
-                                  width: 0,
-                                  height: 0
-                              };
-                          }
-
-                          if (this.selectionBox) {
-                              this.selectionBox.width = event.offsetX - this.selectionBox.x;
-                              this.selectionBox.height = event.offsetY - this.selectionBox.y;
-
-                              // Select skills within box
-                              // Select skills within box and set showActions
-                              this.selectedSkills = this.skills.filter(skill => {
-                                          const box = {
-                                              left: Math.min(this.selectionBox.x, this.selectionBox.x + this.selectionBox.width),
-                                              right: Math.max(this.selectionBox.x, this.selectionBox.x + this.selectionBox.width),
-                                              top: Math.min(this.selectionBox.y, this.selectionBox.y + this.selectionBox.height),
-                                              bottom: Math.max(this.selectionBox.y, this.selectionBox.y + this.selectionBox.height)
-                                          };
-                                          const isSelected = skill.x + 30 >= box.left && skill.x + 30 <= box.right &&
-                                                          skill.y + 30 >= box.top && skill.y + 30 <= box.bottom;
-
-                                          skill.showActions = isSelected;
-                                          return isSelected;
-                                      });
-                          }
-                      },
-
-                      stopSelection() {
-                          if (this.selectionBox) {
-                              setTimeout(() => {
-                                  this.selectionBox = null;
-                              }, 100);
-                          }
-
-
-                          document.removeEventListener('mousemove', this.handleSelection);
-                          document.removeEventListener('mouseup', this.stopSelection);
-                          // Keep the selection but remove the box
-                      },
-
-                      copy() {
-                          // It seems like this.selectedSkills cannot be accessed here.
-                          // Possibly due to a scope issue.
-
-                          const selectedSkills = this.skills.filter(
-                              (skill) => skill.showActions
-                          );
-
-                          if (selectedSkills.length === 0) {
-                              return;
-                          } else {
-                              this.clipboard = selectedSkills;
-                          }
-
-                          console.log("Copied nodes:", this.clipboard);
-                      },
-
-                      paste() {
-                          // append "copy" to the skill name
-                          // adjust positions by a small offset so they are not perfectly overlapping
-                          // add nodes from clipboard to the state
-                          // update the selected nodes to be the newly pasted ones
-
-                          if (this.clipboard.length === 0) {
-                              return;
-                          }
-
-                          // Deep copy the clipboard nodes
-                          const copiedNodes = JSON.parse(JSON.stringify(this.clipboard));
-                          const offsetX = 20;
-                          const offsetY = 20;
-
-                          // Update copied nodes
-                          copiedNodes.forEach((node) => {
-                              node.id = ++this.skillIdCounter;
-                              node.x += offsetX;
-                              node.y += offsetY;
-                              node.showActions = true;
-                              node.shouldAnimate = true;
-                              node.name += " copy";
-                          });
-
-                          // Add copied nodes to the state
-                          this.selectedSkills = copiedNodes;
-                          this.skills.push(...copiedNodes);
-                          this.saveToHistory();
-                      },
-      =======
-                        }
-                      } catch (error) {
-                        console.error("Error parsing JSON:", error);
-                        alert("Invalid JSON file format");
+                            talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${
+                              this.config.paths.images.backgrounds
+                            }${this.parseBackgroundImage(
+                              data["Class Image"]
+                            )}')`;
+                            talentTree.style.filter = "blur(0)";
+                          }, 100);
+                        };
+                        img.src =
+                          this.config.paths.images.backgrounds +
+                          this.parseBackgroundImage(data["Class Image"]);
+                        this.currentBackgroundLink =
+                          this.config.paths.images.backgrounds +
+                          this.parseBackgroundImage(data["Class Image"]);
                       }
-                    };
-
-                    reader.readAsText(file);
-                  };
-      >>>>>>> main
-
-                  // Trigger file input click
-                  fileInput.click();
-                },
-                updateSkillShape() {
-                  document.body.classList.remove("square-skills", "diamond-skills", "hexagon-skills");
-                  if (this.skillShape !== "round") {
-                    document.body.classList.add(`${this.skillShape}-skills`);
-                  }
-                },
-                loadCustomImages() {
-                  const savedImages = localStorage.getItem("customImages");
-                  if (savedImages) {
-                    this.customImages = JSON.parse(savedImages);
-                  }
-                },
-                handleImageUpload(event) {
-                  const file = event.target.files[0];
-                  if (!file) return;
-
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    const newImage = {
-                      id: "custom-" + Date.now(),
-                      src: e.target.result, // This is the base64 data URL
-                      name: file.name,
-                      isDefault: false,
-                    };
-
-                    // Add to custom images array
-                    this.customImages.push(newImage);
-
-                    // Save to localStorage
-                    localStorage.setItem("customImages", JSON.stringify(this.customImages));
-
-                    // Automatically select the newly uploaded image
-                    this.selectImage(newImage);
-                  };
-
-                  reader.readAsDataURL(file);
-                },
-                openDiscord() {
-                  window.open("https://discord.gg/VQy45jAhFP", "_blank");
-                },
-                isViewMode() {
-                  return this.mode === "view";
-                },
-                handleModeChange() {
-                  const url = new URL(window.location);
-                  this.mode === "view"
-                    ? url.searchParams.set("mode", "view")
-                    : url.searchParams.delete("mode");
-                  window.history.pushState({}, "", url);
-                  document.body.classList.toggle("view-mode", this.mode === "view");
-
-                  if (this.mode === "view") {
-                    this.showGlobalGrid = false;
-                    this.skills.forEach((s) => {
-                      s.showActions = false;
-                    });
-                  } else {
-                    this.showGlobalGrid = true;
-                  }
-                },
-                updateBackground() {
-                  const tree = document.querySelector(".talent-tree");
-                  if (tree) {
-                    tree.style.backgroundImage = `linear-gradient(rgba(${parseInt(
-                      this.overlayColor.slice(1, 3),
-                      16
-                    )}, ${parseInt(this.overlayColor.slice(3, 5), 16)}, ${parseInt(
-                      this.overlayColor.slice(5, 7),
-                      16
-                    )}, ${this.overlayOpacity / 100}), rgba(${parseInt(
-                      this.overlayColor.slice(1, 3),
-                      16
-                    )}, ${parseInt(this.overlayColor.slice(3, 5), 16)}, ${parseInt(
-                      this.overlayColor.slice(5, 7),
-                      16
-                    )}, ${this.overlayOpacity / 100})), url('${this.currentBackgroundLink}')`;
-                  }
-                },
-                removeConnection(connection) {
-                  if (this.isViewMode()) return; // Don't remove connections in view mode
-                  this.connections = this.connections.filter((c) => c.id !== connection.id);
-                  this.saveToHistory();
-                },
-                dragStart(e, fromIndex) {
-                  e.dataTransfer.setData("index", fromIndex);
-                },
-
-                drop(e, toIndex) {
-                  const fromIndex = e.dataTransfer.getData("index");
-                  const resources = [...this.editingSkill.resources];
-                  const [resource] = resources.splice(fromIndex, 1);
-                  resources.splice(toIndex, 0, resource);
-                  this.editingSkill.resources = resources;
-                },
-                snapToGrid(x, y) {
-                  const size = parseInt(this.gridSize) / 2; // Use half the grid size for center points
-                  const offsetX = this.treePosition.x % (size * 2);
-                  const offsetY = this.treePosition.y % (size * 2);
-
-                  const gridOffset = size / 2;
-                  // Adjust position by grid size and offset, then subtract skill offset
-                  return {
-                    x: Math.round((x - offsetX + gridOffset / 2) / size) * size + offsetX - 30,
-                    y: Math.round((y - offsetY + gridOffset / 2) / size) * size + offsetY - 30,
-                  };
-                },
-                canAddPoint(skill) {
-                  // Check if adding a point would exceed max points
-                  if (this.totalPointsSpent >= this.maxPoints) {
-                    return false;
-                  }
-
-                  // Check if required points are met
-                  if (skill.requiredPoints && this.totalPointsSpent < skill.requiredPoints) {
-                    // Create and show toast notification
-                    const toast = document.createElement("div");
-                    toast.className = "toast-notification";
-                    toast.textContent = `${skill.name} requires ${skill.requiredPoints} points spent. Current: ${this.totalPointsSpent}`;
-                    document.body.appendChild(toast);
-
-                    // Trigger reflow to ensure animation plays
-                    toast.offsetHeight;
-                    toast.classList.add("show");
-
-                    // Remove toast after animation
-                    setTimeout(() => {
-                      toast.classList.remove("show");
-                      setTimeout(() => toast.remove(), 300); // Remove after fade out
-                    }, 2000);
-                    return false;
-                  }
-
-                  // Check if skill has required points
-                  if (skill.damage) {
-                    // Using damage field for required points
-                    const requiredPoints = parseInt(skill.damage);
-                    if (!isNaN(requiredPoints) && this.totalPointsSpent < requiredPoints) {
-                      return false;
-                    }
-                  }
-
-                  return true;
-                },
-                toggleSkillSelection(skill) {
-                  const index = this.selectedSkills.indexOf(skill.id);
-                  if (index === -1) {
-                    this.selectedSkills.push(skill.id);
-                  } else {
-                    this.selectedSkills.splice(index, 1);
-                  }
-                },
-                loadTree(mode) {
-                  if (mode === "overwrite") {
-                    // Import using full data state
-                    Object.keys(this.loadedData.FullData).forEach((key) => {
-                      this[key] = this.loadedData.FullData[key];
-                    });
-
-                    if (this.loadedData["Background Image"]) {
-                      this.currentBackgroundLink = this.loadedData["Background Image"];
-                      this.updateBackground();
-                    }
-                  } else if (mode === "merge") {
-                    const offset = 0; // Increased offset for better visibility
-                    const idMap = {};
-
-                    // Handle both full data export and regular skill data formats
-                    const skillsToMerge = this.loadedData.FullData?.skills || this.loadedData.Skills;
-
-                    // First pass: Create all skills with new IDs and positions
-                    skillsToMerge.forEach((skillData) => {
-                      const newId = ++this.skillIdCounter;
-
-                      // Handle different data formats
-                      const skill = this.loadedData.FullData?.skills
-                        ? {
-                            ...skillData,
-                            id: newId,
-                            x: skillData.x + offset,
-                            y: skillData.y + offset,
-                            showActions: false,
-                            shouldAnimate: true,
-                          }
-                        : {
-                            id: newId,
-                            name: skillData["Skill Name"],
-                            x:
-                              this.config.grid.startX +
-                              parseInt(skillData["Skill Position"].match(/\((\d+)/)[1]) *
-                                this.config.grid.spacing +
-                              offset,
-                            y:
-                              this.config.grid.startY +
-                              parseInt(skillData["Skill Position"].match(/,\s*(\d+)/)[1]) *
-                                this.config.grid.spacing +
-                              offset,
-                            description: skillData["Skill Description"],
-                            maxPoints: skillData["Skill Max Points"] || this.defaultMaxPoints,
-                            currentPoints: skillData["Skill Current Points"] || 0,
-                            image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
-                            showActions: false,
-                            shouldAnimate: true,
-                            resources: skillData["Skill Resources"] || [],
-                          };
-
-                      // Store the mapping of old ID to new ID
-                      idMap[skillData.id || skillData["Skill Name"]] = newId;
-                      this.skills.push(skill);
-                    });
-
-                    // Second pass: Create connections with updated IDs
-                    if (this.loadedData.FullData?.connections) {
-                      // Handle full data export connections
-                      this.loadedData.FullData.connections.forEach((conn) => {
-                        this.connections.push({
-                          id: `${idMap[conn.from]}-${idMap[conn.to]}`,
-                          from: idMap[conn.from],
-                          to: idMap[conn.to],
-                        });
-                      });
-                    } else {
-                      // Handle regular skill data connections
-                      skillsToMerge.forEach((skillData) => {
-                        if (skillData["Skill Prerequisite"] && skillData["Skill Prerequisite"] !== "-") {
-                          const prereqName = skillData["Skill Prerequisite"].split(" (")[0];
-                          const fromId = idMap[prereqName];
-                          const toId = idMap[skillData["Skill Name"]];
-
-                          if (fromId && toId) {
-                            this.connections.push({
-                              id: `${fromId}-${toId}`,
-                              from: fromId,
-                              to: toId,
-                            });
-                          }
-                        }
-                      });
                     }
 
-                    // Trigger animations for new skills
+                    // Update class name if provided
+                    if (data["Class Name"]) {
+                      this.currentName = data["Class Name"];
+                    }
+
+                    // Update class description if provided
+                    if (data["Class Description"]) {
+                      this.currentClassDescription = data["Class Description"];
+                    }
+
+                    // Save to history after loading
                     setTimeout(() => {
-                      this.skills.forEach((skill) => {
-                        if (skill.id > this.skillIdCounter - skillsToMerge.length) {
-                          skill.shouldAnimate = true;
-                        }
+                      this.saveToHistory();
+                    }, 1000);
+                  }
+                } catch (error) {
+                  console.error("Error parsing JSON:", error);
+                  alert("Invalid JSON file format");
+                }
+              };
+
+              reader.readAsText(file);
+            };
+
+            // Trigger file input click
+            fileInput.click();
+          },
+          updateSkillShape() {
+            document.body.classList.remove(
+              "square-skills",
+              "diamond-skills",
+              "hexagon-skills"
+            );
+            if (this.skillShape !== "round") {
+              document.body.classList.add(`${this.skillShape}-skills`);
+            }
+          },
+          loadCustomImages() {
+            const savedImages = localStorage.getItem("customImages");
+            if (savedImages) {
+              this.customImages = JSON.parse(savedImages);
+            }
+          },
+          handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const newImage = {
+                id: "custom-" + Date.now(),
+                src: e.target.result, // This is the base64 data URL
+                name: file.name,
+                isDefault: false,
+              };
+
+              // Add to custom images array
+              this.customImages.push(newImage);
+
+              // Save to localStorage
+              localStorage.setItem(
+                "customImages",
+                JSON.stringify(this.customImages)
+              );
+
+              // Automatically select the newly uploaded image
+              this.selectImage(newImage);
+            };
+
+            reader.readAsDataURL(file);
+          },
+          openDiscord() {
+            window.open("https://discord.gg/VQy45jAhFP", "_blank");
+          },
+          isViewMode() {
+            return this.mode === "view";
+          },
+          handleModeChange() {
+            const url = new URL(window.location);
+            this.mode === "view"
+              ? url.searchParams.set("mode", "view")
+              : url.searchParams.delete("mode");
+            window.history.pushState({}, "", url);
+            document.body.classList.toggle("view-mode", this.mode === "view");
+
+            if (this.mode === "view") {
+              this.showGlobalGrid = false;
+              this.skills.forEach((s) => {
+                s.showActions = false;
+              });
+            } else {
+              this.showGlobalGrid = true;
+            }
+          },
+          updateBackground() {
+            const tree = document.querySelector(".talent-tree");
+            if (tree) {
+              tree.style.backgroundImage = `linear-gradient(rgba(${parseInt(
+                this.overlayColor.slice(1, 3),
+                16
+              )}, ${parseInt(this.overlayColor.slice(3, 5), 16)}, ${parseInt(
+                this.overlayColor.slice(5, 7),
+                16
+              )}, ${this.overlayOpacity / 100}), rgba(${parseInt(
+                this.overlayColor.slice(1, 3),
+                16
+              )}, ${parseInt(this.overlayColor.slice(3, 5), 16)}, ${parseInt(
+                this.overlayColor.slice(5, 7),
+                16
+              )}, ${this.overlayOpacity / 100})), url('${
+                this.currentBackgroundLink
+              }')`;
+            }
+          },
+          removeConnection(connection) {
+            if (this.isViewMode()) return; // Don't remove connections in view mode
+            this.connections = this.connections.filter(
+              (c) => c.id !== connection.id
+            );
+            this.saveToHistory();
+          },
+          dragStart(e, fromIndex) {
+            e.dataTransfer.setData("index", fromIndex);
+          },
+
+          drop(e, toIndex) {
+            const fromIndex = e.dataTransfer.getData("index");
+            const resources = [...this.editingSkill.resources];
+            const [resource] = resources.splice(fromIndex, 1);
+            resources.splice(toIndex, 0, resource);
+            this.editingSkill.resources = resources;
+          },
+          snapToGrid(x, y) {
+            const size = parseInt(this.gridSize) / 2; // Use half the grid size for center points
+            const offsetX = this.treePosition.x % (size * 2);
+            const offsetY = this.treePosition.y % (size * 2);
+
+            const gridOffset = size / 2;
+            // Adjust position by grid size and offset, then subtract skill offset
+            return {
+              x:
+                Math.round((x - offsetX + gridOffset / 2) / size) * size +
+                offsetX -
+                30,
+              y:
+                Math.round((y - offsetY + gridOffset / 2) / size) * size +
+                offsetY -
+                30,
+            };
+          },
+          canAddPoint(skill) {
+            // Check if adding a point would exceed max points
+            if (this.totalPointsSpent >= this.maxPoints) {
+              return false;
+            }
+
+            // Check if required points are met
+            if (
+              skill.requiredPoints &&
+              this.totalPointsSpent < skill.requiredPoints
+            ) {
+              // Create and show toast notification
+              const toast = document.createElement("div");
+              toast.className = "toast-notification";
+              toast.textContent = `${skill.name} requires ${skill.requiredPoints} points spent. Current: ${this.totalPointsSpent}`;
+              document.body.appendChild(toast);
+
+              // Trigger reflow to ensure animation plays
+              toast.offsetHeight;
+              toast.classList.add("show");
+
+              // Remove toast after animation
+              setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.remove(), 300); // Remove after fade out
+              }, 2000);
+              return false;
+            }
+
+            // Check if skill has required points
+            if (skill.damage) {
+              // Using damage field for required points
+              const requiredPoints = parseInt(skill.damage);
+              if (
+                !isNaN(requiredPoints) &&
+                this.totalPointsSpent < requiredPoints
+              ) {
+                return false;
+              }
+            }
+
+            return true;
+          },
+          toggleSkillSelection(skill) {
+            const index = this.selectedSkills.indexOf(skill.id);
+            if (index === -1) {
+              this.selectedSkills.push(skill.id);
+            } else {
+              this.selectedSkills.splice(index, 1);
+            }
+          },
+          loadTree(mode) {
+            if (mode === "overwrite") {
+              // Import using full data state
+              Object.keys(this.loadedData.FullData).forEach((key) => {
+                this[key] = this.loadedData.FullData[key];
+              });
+
+              if (this.loadedData["Background Image"]) {
+                this.currentBackgroundLink =
+                  this.loadedData["Background Image"];
+                this.updateBackground();
+              }
+            } else if (mode === "merge") {
+              const offset = 0; // Increased offset for better visibility
+              const idMap = {};
+
+              // Handle both full data export and regular skill data formats
+              const skillsToMerge =
+                this.loadedData.FullData?.skills || this.loadedData.Skills;
+
+              // First pass: Create all skills with new IDs and positions
+              skillsToMerge.forEach((skillData) => {
+                const newId = ++this.skillIdCounter;
+
+                // Handle different data formats
+                const skill = this.loadedData.FullData?.skills
+                  ? {
+                      ...skillData,
+                      id: newId,
+                      x: skillData.x + offset,
+                      y: skillData.y + offset,
+                      showActions: false,
+                      shouldAnimate: true,
+                    }
+                  : {
+                      id: newId,
+                      name: skillData["Skill Name"],
+                      x:
+                        this.config.grid.startX +
+                        parseInt(
+                          skillData["Skill Position"].match(/\((\d+)/)[1]
+                        ) *
+                          this.config.grid.spacing +
+                        offset,
+                      y:
+                        this.config.grid.startY +
+                        parseInt(
+                          skillData["Skill Position"].match(/,\s*(\d+)/)[1]
+                        ) *
+                          this.config.grid.spacing +
+                        offset,
+                      description: skillData["Skill Description"],
+                      maxPoints:
+                        skillData["Skill Max Points"] || this.defaultMaxPoints,
+                      currentPoints: skillData["Skill Current Points"] || 0,
+                      image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
+                      showActions: false,
+                      shouldAnimate: true,
+                      resources: skillData["Skill Resources"] || [],
+                    };
+
+                // Store the mapping of old ID to new ID
+                idMap[skillData.id || skillData["Skill Name"]] = newId;
+                this.skills.push(skill);
+              });
+
+              // Second pass: Create connections with updated IDs
+              if (this.loadedData.FullData?.connections) {
+                // Handle full data export connections
+                this.loadedData.FullData.connections.forEach((conn) => {
+                  this.connections.push({
+                    id: `${idMap[conn.from]}-${idMap[conn.to]}`,
+                    from: idMap[conn.from],
+                    to: idMap[conn.to],
+                  });
+                });
+              } else {
+                // Handle regular skill data connections
+                skillsToMerge.forEach((skillData) => {
+                  if (
+                    skillData["Skill Prerequisite"] &&
+                    skillData["Skill Prerequisite"] !== "-"
+                  ) {
+                    const prereqName =
+                      skillData["Skill Prerequisite"].split(" (")[0];
+                    const fromId = idMap[prereqName];
+                    const toId = idMap[skillData["Skill Name"]];
+
+                    if (fromId && toId) {
+                      this.connections.push({
+                        id: `${fromId}-${toId}`,
+                        from: fromId,
+                        to: toId,
                       });
-                    }, 100);
+                    }
                   }
+                });
+              }
 
-                  this.showLoadModal = false;
-
-                  setTimeout(() => {
-                    this.saveToHistory();
-                    this.loadedData = null;
-                  }, 1000);
-                },
-                handleBackgroundUpload(event) {
-                  const file = event.target.files[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                      const imageData = {
-                        id: `bg_${Date.now()}`,
-                        src: e.target.result,
-                        name: file.name,
-                        type: "background",
-                      };
-
-                      // Update recent backgrounds
-                      this.recentBackgrounds.unshift(imageData);
-                      // Keep only the 3 most recent
-                      this.recentBackgrounds = this.recentBackgrounds.slice(0, 3);
-                      // Save to localStorage
-                      localStorage.setItem("recentBackgrounds", JSON.stringify(this.recentBackgrounds));
-
-                      // Save to localStorage
-                      const customImages = JSON.parse(localStorage.getItem("customImages") || "[]");
-                      customImages.push(imageData);
-                      localStorage.setItem("customImages", JSON.stringify(customImages));
-
-                      // Update background
-                      this.currentBackgroundLink = imageData.src;
-                      this.updateBackground();
-                    };
-                    reader.readAsDataURL(file);
+              // Trigger animations for new skills
+              setTimeout(() => {
+                this.skills.forEach((skill) => {
+                  if (skill.id > this.skillIdCounter - skillsToMerge.length) {
+                    skill.shouldAnimate = true;
                   }
-                },
+                });
+              }, 100);
+            }
 
-                // updateBackground() {
-                //     const talentTree = document.querySelector('.talent-tree');
-                //     if (talentTree && this.currentBackgroundLink) {
-                //         talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, ${this.overlayOpacity / 100}), rgba(0, 0, 0, ${this.overlayOpacity / 100})), url('${this.currentBackgroundLink}')`;
-                //     }
-                // },
+            this.showLoadModal = false;
 
-                // Add these new methods
-                handleSelection(event) {
-                  // Check if we're interacting with a skill or other UI element
-                  if (!event.target.classList.contains("talent-tree")) {
-                    // event.target.classList is undefined if dragged off screen. maybe use this to shift the view
-                    return;
-                  }
-                  const moveThreshold = 5; // pixels
-                  const deltaX = event.offsetX - this.initialClick.x;
-                  const deltaY = event.offsetY - this.initialClick.y;
+            setTimeout(() => {
+              this.saveToHistory();
+              this.loadedData = null;
+            }, 1000);
+          },
+          handleBackgroundUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const imageData = {
+                  id: `bg_${Date.now()}`,
+                  src: e.target.result,
+                  name: file.name,
+                  type: "background",
+                };
 
-                  if (Math.abs(deltaX) > moveThreshold || Math.abs(deltaY) > moveThreshold) {
-                    // Create selection box on first movement
-                    this.selectionBox = {
-                      x: this.initialClick.x,
-                      y: this.initialClick.y,
-                      width: 0,
-                      height: 0,
-                    };
-                  }
+                // Update recent backgrounds
+                this.recentBackgrounds.unshift(imageData);
+                // Keep only the 3 most recent
+                this.recentBackgrounds = this.recentBackgrounds.slice(0, 3);
+                // Save to localStorage
+                localStorage.setItem(
+                  "recentBackgrounds",
+                  JSON.stringify(this.recentBackgrounds)
+                );
 
-                  if (this.selectionBox) {
-                    this.selectionBox.width = event.offsetX - this.selectionBox.x;
-                    this.selectionBox.height = event.offsetY - this.selectionBox.y;
+                // Save to localStorage
+                const customImages = JSON.parse(
+                  localStorage.getItem("customImages") || "[]"
+                );
+                customImages.push(imageData);
+                localStorage.setItem(
+                  "customImages",
+                  JSON.stringify(customImages)
+                );
 
-                    // Select skills within box
-                    // Select skills within box and set showActions
-                    this.selectedSkills = this.skills.filter((skill) => {
-                      const box = {
-                        left: Math.min(
-                          this.selectionBox.x,
-                          this.selectionBox.x + this.selectionBox.width
-                        ),
-                        right: Math.max(
-                          this.selectionBox.x,
-                          this.selectionBox.x + this.selectionBox.width
-                        ),
-                        top: Math.min(
-                          this.selectionBox.y,
-                          this.selectionBox.y + this.selectionBox.height
-                        ),
-                        bottom: Math.max(
-                          this.selectionBox.y,
-                          this.selectionBox.y + this.selectionBox.height
-                        ),
-                      };
-                      const isSelected =
-                        skill.x + 30 >= box.left &&
-                        skill.x + 30 <= box.right &&
-                        skill.y + 30 >= box.top &&
-                        skill.y + 30 <= box.bottom;
+                // Update background
+                this.currentBackgroundLink = imageData.src;
+                this.updateBackground();
+              };
+              reader.readAsDataURL(file);
+            }
+          },
 
-                      skill.showActions = isSelected;
-                      return isSelected;
-                    });
-                  }
-                },
+          // updateBackground() {
+          //     const talentTree = document.querySelector('.talent-tree');
+          //     if (talentTree && this.currentBackgroundLink) {
+          //         talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, ${this.overlayOpacity / 100}), rgba(0, 0, 0, ${this.overlayOpacity / 100})), url('${this.currentBackgroundLink}')`;
+          //     }
+          // },
 
-                stopSelection() {
-                  if (this.selectionBox) {
-                    setTimeout(() => {
-                      this.selectionBox = null;
-                    }, 100);
-                  }
+          // Add these new methods
+          handleSelection(event) {
+            // Check if we're interacting with a skill or other UI element
+            if (!event.target.classList.contains("talent-tree")) {
+              // event.target.classList is undefined if dragged off screen. maybe use this to shift the view
+              return;
+            }
+            const moveThreshold = 5; // pixels
+            const deltaX = event.offsetX - this.initialClick.x;
+            const deltaY = event.offsetY - this.initialClick.y;
 
-                  document.removeEventListener("mousemove", this.handleSelection);
-                  document.removeEventListener("mouseup", this.stopSelection);
-                  // Keep the selection but remove the box
-                },
-              },
-            }).mount("#app");
+            if (
+              Math.abs(deltaX) > moveThreshold ||
+              Math.abs(deltaY) > moveThreshold
+            ) {
+              // Create selection box on first movement
+              this.selectionBox = {
+                x: this.initialClick.x,
+                y: this.initialClick.y,
+                width: 0,
+                height: 0,
+              };
+            }
+
+            if (this.selectionBox) {
+              this.selectionBox.width = event.offsetX - this.selectionBox.x;
+              this.selectionBox.height = event.offsetY - this.selectionBox.y;
+
+              // Select skills within box
+              // Select skills within box and set showActions
+              this.selectedSkills = this.skills.filter((skill) => {
+                const box = {
+                  left: Math.min(
+                    this.selectionBox.x,
+                    this.selectionBox.x + this.selectionBox.width
+                  ),
+                  right: Math.max(
+                    this.selectionBox.x,
+                    this.selectionBox.x + this.selectionBox.width
+                  ),
+                  top: Math.min(
+                    this.selectionBox.y,
+                    this.selectionBox.y + this.selectionBox.height
+                  ),
+                  bottom: Math.max(
+                    this.selectionBox.y,
+                    this.selectionBox.y + this.selectionBox.height
+                  ),
+                };
+                const isSelected =
+                  skill.x + 30 >= box.left &&
+                  skill.x + 30 <= box.right &&
+                  skill.y + 30 >= box.top &&
+                  skill.y + 30 <= box.bottom;
+
+                skill.showActions = isSelected;
+                return isSelected;
+              });
+            }
+          },
+
+          stopSelection() {
+            if (this.selectionBox) {
+              setTimeout(() => {
+                this.selectionBox = null;
+              }, 100);
+            }
+
+            document.removeEventListener("mousemove", this.handleSelection);
+            document.removeEventListener("mouseup", this.stopSelection);
+            // Keep the selection but remove the box
+          },
+
+          copy() {
+            // It seems like this.selectedSkills cannot be accessed here.
+            // Possibly due to a scope issue.
+
+            const selectedSkills = this.skills.filter(
+              (skill) => skill.showActions
+            );
+
+            if (selectedSkills.length === 0) {
+              return;
+            } else {
+              this.clipboard = selectedSkills;
+            }
+
+            console.log("Copied nodes:", this.clipboard);
+          },
+
+          paste() {
+            // append "copy" to the skill name
+            // adjust positions by a small offset so they are not perfectly overlapping
+            // add nodes from clipboard to the state
+            // update the selected nodes to be the newly pasted ones
+
+            if (this.clipboard.length === 0) {
+              return;
+            }
+
+            // Deep copy the clipboard nodes
+            const copiedNodes = JSON.parse(JSON.stringify(this.clipboard));
+            const offsetX = 20;
+            const offsetY = 20;
+
+            // Update copied nodes
+            copiedNodes.forEach((node) => {
+              node.id = ++this.skillIdCounter;
+              node.x += offsetX;
+              node.y += offsetY;
+              node.showActions = true;
+              node.shouldAnimate = true;
+              node.name += " copy";
+            });
+
+            // Add copied nodes to the state
+            this.selectedSkills = copiedNodes;
+            this.skills.push(...copiedNodes);
+            this.saveToHistory();
+          },
+        },
+      }).mount("#app");
     </script>
   </body>
 </html>
