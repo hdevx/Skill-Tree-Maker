@@ -2139,6 +2139,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 placeholder="Maximum points allowed"
               />
             </div>
+            <div class="option-group">
+              <label>Skill Unlock</label>
+              <select v-model="prerequisiteMode">
+                <option value="none">No Previous Skills Required</option>
+                <option value="one">At Least One Skill Required</option>
+                <option default value="all">All Previous Skills Required</option>
+              </select>
+            </div>
           </div>
 
           <div class="options-section">
@@ -2603,6 +2611,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             loadedData: null,
             recentBackgrounds: JSON.parse(localStorage.getItem("recentBackgrounds") || "[]"),
             initialPositions: null,
+            prerequisiteMode: "all",
           };
         },
 
@@ -4393,10 +4402,85 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             // Check if skill has required points
             if (skill.damage) {
-              // Using damage field for required points
+              // Using old damage field for required points
               const requiredPoints = parseInt(skill.damage);
               if (!isNaN(requiredPoints) && this.totalPointsSpent < requiredPoints) {
                 return false;
+              }
+            }
+            // Check prerequisites (incoming connections)
+            const incomingConnections = this.connections.filter((conn) => conn.to === skill.id);
+            if (incomingConnections.length > 0) {
+              if (this.prerequisiteMode === "none") {
+                return true;
+              } else if (this.prerequisiteMode === "all") {
+                // Check if ALL prerequisite skills are unlocked
+                const allPrereqsUnlocked = incomingConnections.every((conn) => {
+                  const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                  return prereqSkill && prereqSkill.currentPoints > 0;
+                });
+
+                if (!allPrereqsUnlocked) {
+                  // Show toast notification for prerequisite requirement
+                  const toast = document.createElement("div");
+                  toast.className = "toast-notification";
+
+                  // Get list of missing prerequisites
+                  const missingPrereqs = incomingConnections
+                    .filter((conn) => {
+                      const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                      return !prereqSkill || prereqSkill.currentPoints === 0;
+                    })
+                    .map((conn) => {
+                      const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                      return prereqSkill.name;
+                    })
+                    .join(", ");
+
+                  toast.textContent = `${skill.name} requires: ${missingPrereqs} to unlock`;
+                  document.body.appendChild(toast);
+
+                  toast.offsetHeight;
+                  toast.classList.add("show");
+
+                  setTimeout(() => {
+                    toast.classList.remove("show");
+                    setTimeout(() => toast.remove(), 300);
+                  }, 3000);
+                  return false;
+                }
+              } else {
+                // 'one'
+                // Check if at least one prerequisite skill is unlocked
+                const hasUnlockedPrereq = incomingConnections.some((conn) => {
+                  const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                  return prereqSkill && prereqSkill.currentPoints > 0;
+                });
+
+                if (!hasUnlockedPrereq) {
+                  const prereqSkills = incomingConnections
+                    .map((conn) => {
+                      const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                      return prereqSkill.name;
+                    })
+                    .join(" or ");
+
+                  // Show toast notification for prerequisite requirement
+                  const toast = document.createElement("div");
+                  toast.className = "toast-notification";
+                  toast.textContent = `${skill.name} requires: ${prereqSkills} to unlock`;
+
+                  document.body.appendChild(toast);
+
+                  toast.offsetHeight;
+                  toast.classList.add("show");
+
+                  setTimeout(() => {
+                    toast.classList.remove("show");
+                    setTimeout(() => toast.remove(), 300);
+                  }, 3000);
+                  return false;
+                }
               }
             }
 
