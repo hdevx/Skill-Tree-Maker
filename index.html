@@ -2001,7 +2001,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                         opacity: skill.shouldAnimate ? 1 : 0
                     }"
           @contextmenu.prevent="decrementPoints(skill)"
-          @click.stop="toggleActions(skill)"
+          @click.stop="!$event.shiftKey && toggleActions(skill)"
           @mousedown.left="startDrag($event, skill)"
           @touchstart.stop="handleSkillTouch($event, skill)"
           @touchend.stop="handleSkillTouchEnd(skill)"
@@ -2602,7 +2602,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             showArrows: true,
             showGlobalGrid: false,
             gridOpacity: 12,
-            gridSize: window.innerWidth <= 768 ? 80 : 240, // Default grid size based on screen width
+            gridSize: window.innerWidth <= 768 ? 80 : 120, // Default grid size based on screen width
             maxPoints: 20, // Default max points
             selectionBox: null,
             selectedSkills: [],
@@ -2735,7 +2735,27 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 if (this.canRedo) {
                   this.redo();
                 }
+              } else if (event.key === "c") {
+                this.copy();
+              } else if (event.key === "v") {
+                this.paste();
               }
+            } else if (event.key === "Delete") {
+              // Get all selected skills
+              const selectedSkills = this.skills.filter((skill) =>
+                this.selectedSkills.includes(skill.id)
+              );
+
+              // Delete each selected skill using existing deleteSkill method
+              selectedSkills.forEach((skill) => {
+                this.deleteSkill(skill);
+              });
+
+              // Clear selection
+              this.deselectAllSkills();
+
+              // Save state to history
+              this.saveToHistory();
             }
           },
           loadDefaultConfig() {
@@ -2917,7 +2937,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
           handleClick(event) {
             if (this.isViewMode()) return;
-
             // Don't create skill if we just finished making a selection
             // if (!this.selectionBox) {
             // if (!event.target.classList.contains('skill')) {
@@ -2935,6 +2954,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
 
           createSkill(x, y) {
+            this.deselectAllSkills();
+
             const skill = {
               id: ++this.skillIdCounter,
               x: x - this.config.skill.offset,
@@ -2977,10 +2998,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 return;
               }
 
+              //instead want to deselect all skills
+              this.deselectAllSkills();
+
               // Hide all other action menus
-              this.skills.forEach((s) => {
-                if (s.id !== skill.id) s.showActions = false;
-              });
+              // this.skills.forEach((s) => {
+              //   if (s.id !== skill.id) s.showActions = false;
+              // });
 
               // Increment points only on clean click
               if (skill.currentPoints < skill.maxPoints) {
@@ -2994,16 +3018,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     if (this.canAddPoint(skill)) {
                       skill.currentPoints++;
                     }
+                  } else {
+                    skill.showActions = true;
+                    this.selectedSkills.push(skill);
                   }
+                  console.log("selectedSkills", this.selectedSkills.length);
                 }
               }
 
               if (this.isViewMode()) return;
 
               // Don't toggle if actions are already shown
-              if (!skill.showActions) {
-                skill.showActions = true;
-              }
+              // if (!skill.showActions) {
+              //   skill.showActions = true;
+              // }
             }
           },
 
@@ -3109,9 +3137,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             // Store initial positions of selected skills
             this.initialPositions = {};
-            this.selectedSkills.forEach((skill) => {
-              if (skill) {
-                this.initialPositions[skill.id] = { x: skill.x, y: skill.y };
+            // this.selectedSkills.forEach((skill) => {
+            //   if (skill) {
+            //     this.initialPositions[skill.id] = { x: skill.x, y: skill.y };
+            //   }
+            // });
+            this.selectedSkills.forEach((selectedSkill) => {
+              if (selectedSkill) {
+                this.initialPositions[selectedSkill.id] = {
+                  x: selectedSkill.x - skill.x, // Store relative offset from dragged skill
+                  y: selectedSkill.y - skill.y,
+                };
               }
             });
 
@@ -3242,20 +3278,36 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
                 // console.log("selectedSkills", this.selectedSkills)
                 // Move all other selected skills maintaining relative positions
+                // this.selectedSkills.forEach((skillInArray) => {
+                //   if (skillInArray.id !== this.draggedSkill.id) {
+                //     let skill = this.skills.find((s) => s.id === skillInArray.id);
+                //     if (skill) {
+                //       skill.x =
+                //         finalX -
+                //         this.dragStartPos.x +
+                //         30 +
+                //         this.initialPositions[skillInArray.id].x;
+                //       skill.y =
+                //         finalY -
+                //         this.dragStartPos.y +
+                //         30 +
+                //         this.initialPositions[skillInArray.id].y;
+                //       const skillElement = document.querySelector(`[data-skill-id="${skill.id}"]`);
+                //       if (skillElement) {
+                //         skillElement.style.left = `${skill.x}px`;
+                //         skillElement.style.top = `${skill.y}px`;
+                //       }
+                //     }
+                //   }
+                // });
                 this.selectedSkills.forEach((skillInArray) => {
                   if (skillInArray.id !== this.draggedSkill.id) {
                     let skill = this.skills.find((s) => s.id === skillInArray.id);
                     if (skill) {
-                      skill.x =
-                        finalX -
-                        this.dragStartPos.x +
-                        30 +
-                        this.initialPositions[skillInArray.id].x;
-                      skill.y =
-                        finalY -
-                        this.dragStartPos.y +
-                        30 +
-                        this.initialPositions[skillInArray.id].y;
+                      const relativePos = this.initialPositions[skillInArray.id];
+                      skill.x = finalX + relativePos.x; // Use relative position directly
+                      skill.y = finalY + relativePos.y;
+
                       const skillElement = document.querySelector(`[data-skill-id="${skill.id}"]`);
                       if (skillElement) {
                         skillElement.style.left = `${skill.x}px`;
@@ -4487,12 +4539,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
             return true;
           },
           toggleSkillSelection(skill) {
-            const index = this.selectedSkills.indexOf(skill.id);
-            if (index === -1) {
-              this.selectedSkills.push(skill.id);
+            //  if n
+            if (!skill.showActions) {
+              skill.showActions = true;
+              this.selectedSkills.push(skill);
             } else {
+              skill.showActions = false;
+              const index = this.selectedSkills.indexOf(skill.id);
               this.selectedSkills.splice(index, 1);
             }
+            // if (index === -1) {
+
+            // } else {
+            // }
+
+            console.log("selectedSkills", this.selectedSkills);
           },
           loadTree(mode) {
             if (mode === "overwrite") {
@@ -4706,6 +4767,59 @@ input[type="range"]::-webkit-slider-thumb:hover {
             document.removeEventListener("mousemove", this.handleSelection);
             document.removeEventListener("mouseup", this.stopSelection);
             // Keep the selection but remove the box
+          },
+          deselectAllSkills() {
+            // Clear all existing selections and action menus
+            this.selectedSkills = [];
+            this.skills.forEach((s) => {
+              s.showActions = false;
+            });
+          },
+          copy() {
+            // It seems like this.selectedSkills cannot be accessed here.
+            // Possibly due to a scope issue.
+
+            const selectedSkills = this.skills.filter((skill) => skill.showActions);
+
+            if (selectedSkills.length === 0) {
+              return;
+            } else {
+              this.clipboard = selectedSkills;
+            }
+
+            console.log("Copied nodes:", this.clipboard);
+          },
+
+          paste() {
+            this.deselectAllSkills();
+            // append "copy" to the skill name
+            // adjust positions by a small offset so they are not perfectly overlapping
+            // add nodes from clipboard to the state
+            // update the selected nodes to be the newly pasted ones
+
+            if (this.clipboard.length === 0) {
+              return;
+            }
+
+            // Deep copy the clipboard nodes
+            const copiedNodes = JSON.parse(JSON.stringify(this.clipboard));
+            // Calculate grid-based offset
+            const gridOffset = this.showGlobalGrid ? parseInt(this.gridSize) : 120; // Use grid size if enabled, otherwise default to 120px
+
+            // Update copied nodes
+            copiedNodes.forEach((node) => {
+              node.id = ++this.skillIdCounter;
+              node.x += gridOffset;
+              node.y += gridOffset;
+              node.showActions = true;
+              node.shouldAnimate = true;
+              node.name += " copy";
+            });
+
+            // Add copied nodes to the state
+            this.selectedSkills = copiedNodes;
+            this.skills.push(...copiedNodes);
+            this.saveToHistory();
           },
         },
       }).mount("#app");
