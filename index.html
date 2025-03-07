@@ -1568,11 +1568,13 @@
       }
 
       .grid-overlay {
-        position: absolute;
+        /* position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        bottom: 0;
+        bottom: 0; */
+        width: 100%;
+        height: 100%;
         pointer-events: none;
         z-index: 0;
       }
@@ -1867,6 +1869,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
         pointer-events: none;
         z-index: 1;
       }
+
+      .zoom-tree {
+        transform: translate(-25%, -25%) scale(1);
+        transform-origin: center center;
+        width: 200%;
+        height: 200%;
+      }
     </style>
 
     <!-- Google tag (gtag.js) -->
@@ -1945,136 +1954,144 @@ input[type="range"]::-webkit-slider-thumb:hover {
         @touchend="handleTreeTouchEnd"
         @contextmenu.prevent
       >
-        <div v-if="showGlobalGrid" class="grid-overlay" :style="gridStyle">
-          <!-- Grid lines will be added dynamically -->
+        <div class="zoom-tree">
+          <div v-if="showGlobalGrid" class="grid-overlay" :style="gridStyle">
+            <!-- Grid lines will be added dynamically -->
+            <div
+              v-for="line in gridLines"
+              :key="line.id"
+              class="grid-line"
+              :class="line.type"
+              :style="line.style"
+            ></div>
+          </div>
           <div
-            v-for="line in gridLines"
-            :key="line.id"
-            class="grid-line"
-            :class="line.type"
-            :style="line.style"
-          ></div>
-        </div>
-        <div
-          v-if="selectionBox"
-          class="selection-box"
-          :style="{
+            v-if="selectionBox"
+            class="selection-box"
+            :style="{
                 left: `${Math.min(selectionBox.x, selectionBox.x + selectionBox.width)}px`,
                 top: `${Math.min(selectionBox.y, selectionBox.y + selectionBox.height)}px`,
                 width: `${Math.abs(selectionBox.width)}px`,
                 height: `${Math.abs(selectionBox.height)}px`
             }"
-        ></div>
+          ></div>
 
-        <!-- Connections between skills -->
-        <div
-          v-for="connection in connections"
-          :key="connection.id"
-          class="connection"
-          :class="{ active: isConnectionActive(connection), 'connection-hover': connection.isHovered }"
-          :style="getConnectionStyle(connection)"
-          @mouseenter="connection.isHovered = true"
-          @mouseleave="connection.isHovered = false"
-          @click.stop="removeConnection(connection)"
-          @touchstart.stop.prevent="removeConnection(connection)"
-        >
-          <div class="connection-hitbox"></div>
-          <div v-show="showArrows" class="connection-after"></div>
-        </div>
+          <div class="skill-connections-container">
+            <!-- Connections between skills -->
+            <div
+              v-for="connection in connections"
+              :key="connection.id"
+              class="connection"
+              :class="{ active: isConnectionActive(connection), 'connection-hover': connection.isHovered }"
+              :style="getConnectionStyle(connection)"
+              @mouseenter="connection.isHovered = true"
+              @mouseleave="connection.isHovered = false"
+              @click.stop="removeConnection(connection)"
+              @touchstart.stop.prevent="removeConnection(connection)"
+            >
+              <div class="connection-hitbox"></div>
+              <div v-show="showArrows" class="connection-after"></div>
+            </div>
 
-        <!-- Skills -->
-        <div
-          v-for="(skill, index) in skills"
-          :key="skill.id"
-          :data-skill-id="skill.id"
-          class="skill"
-          :class="{
+            <!-- Skills -->
+            <div
+              v-for="(skill, index) in skills"
+              :key="skill.id"
+              :data-skill-id="skill.id"
+              class="skill"
+              :class="{
                         'inactive': skill.currentPoints === 0,
                         'animate-in': skill.shouldAnimate,
                         'initial-skill': index < 4,
                         'skilled': skill.currentPoints > 0
                         //'selected': selectedSkills.includes(skill.id)'
                     }"
-          :style="{
+              :style="{
                         left: skill.x + 'px',
                         top: skill.y + 'px',
                         opacity: skill.shouldAnimate ? 1 : 0
                     }"
-          @contextmenu.prevent="decrementPoints(skill)"
-          @click.stop="!$event.shiftKey && toggleActions(skill)"
-          @mousedown.left="startDrag($event, skill)"
-          @touchstart.stop="handleSkillTouch($event, skill)"
-          @touchend.stop="handleSkillTouchEnd(skill)"
-          @mouseenter="skill.showTooltip = true"
-          @mouseleave="skill.showTooltip = false"
-          @click.shift.stop="toggleSkillSelection(skill)"
-        >
-          <img
-            :src="skill.image"
-            :alt="skill.name"
-            @load="handleImageLoad($event)"
-            style="
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              object-fit: cover;
-              color: transparent;
-              opacity: 0;
-              transition: opacity 0.3s ease;
-            "
-          />
-          <div class="skill-points">{{ skill.currentPoints }}/{{ skill.maxPoints }}</div>
+              @contextmenu.prevent="decrementPoints(skill)"
+              @click.stop="!$event.shiftKey && toggleActions(skill)"
+              @mousedown.left="startDrag($event, skill)"
+              @touchstart.stop="handleSkillTouch($event, skill)"
+              @touchend.stop="handleSkillTouchEnd(skill)"
+              @mouseenter="skill.showTooltip = true"
+              @mouseleave="skill.showTooltip = false"
+              @click.shift.stop="toggleSkillSelection(skill)"
+            >
+              <img
+                :src="skill.image"
+                :alt="skill.name"
+                @load="handleImageLoad($event)"
+                style="
+                  width: 100%;
+                  height: 100%;
+                  border-radius: 50%;
+                  object-fit: cover;
+                  color: transparent;
+                  opacity: 0;
+                  transition: opacity 0.3s ease;
+                "
+              />
+              <div class="skill-points">{{ skill.currentPoints }}/{{ skill.maxPoints }}</div>
 
-          <!-- Add the tooltip -->
-          <div class="skill-tooltip" v-if="skill.showTooltip" :class="getTooltipPosition(skill)">
-            <h3>{{ skill.name }}</h3>
-            <p style="white-space: pre-wrap">
-              {{ skill.description || 'No description available' }}
-            </p>
-            <div class="resources-container" v-if="skill.resources?.length">
-              <div class="resources-container" v-if="skill.resources?.length">
-                <div
-                  v-for="r in skill.resources"
-                  :key="r.name"
-                  class="resource-row"
-                  :style="{color: r.color}"
-                >
-                  {{ r.name }}{{ r.value ? ': ' + r.value : '' }}
+              <!-- Add the tooltip -->
+              <div
+                class="skill-tooltip"
+                v-if="skill.showTooltip"
+                :class="getTooltipPosition(skill)"
+              >
+                <h3>{{ skill.name }}</h3>
+                <p style="white-space: pre-wrap">
+                  {{ skill.description || 'No description available' }}
+                </p>
+                <div class="resources-container" v-if="skill.resources?.length">
+                  <div class="resources-container" v-if="skill.resources?.length">
+                    <div
+                      v-for="r in skill.resources"
+                      :key="r.name"
+                      class="resource-row"
+                      :style="{color: r.color}"
+                    >
+                      {{ r.name }}{{ r.value ? ': ' + r.value : '' }}
+                    </div>
+                  </div>
                 </div>
+                <p class="damage" v-if="skill.damage">Damage: {{ skill.damage }}</p>
+              </div>
+
+              <!-- Action buttons -->
+              <div v-if="skill.showActions" class="skill-actions">
+                <button
+                  class="action-btn"
+                  @click.stop="editSkill(skill)"
+                  @touchstart.stop.prevent="editSkill(skill)"
+                  @mouseenter="showActionTooltip($event, 'Edit skill')"
+                  @mouseleave="hideActionTooltip($event)"
+                >
+                  ✏️
+                </button>
+                <button
+                  class="action-btn"
+                  @click.stop="deleteSkill(skill)"
+                  @touchstart.stop.prevent="deleteSkill(skill)"
+                  @mouseenter="showActionTooltip($event, 'Delete skill')"
+                  @mouseleave="hideActionTooltip($event)"
+                >
+                  ❌
+                </button>
+                <button
+                  class="action-btn"
+                  @click.stop="connectSkill(skill)"
+                  @touchstart.stop.prevent="connectSkill(skill)"
+                  @mouseenter="showActionTooltip($event, 'Connect to another skill. Left click on the destination.')"
+                  @mouseleave="hideActionTooltip($event)"
+                >
+                  🔗
+                </button>
               </div>
             </div>
-            <p class="damage" v-if="skill.damage">Damage: {{ skill.damage }}</p>
-          </div>
-
-          <!-- Action buttons -->
-          <div v-if="skill.showActions" class="skill-actions">
-            <button
-              class="action-btn"
-              @click.stop="editSkill(skill)"
-              @touchstart.stop.prevent="editSkill(skill)"
-              @mouseenter="showActionTooltip($event, 'Edit skill')"
-              @mouseleave="hideActionTooltip($event)"
-            >
-              ✏️
-            </button>
-            <button
-              class="action-btn"
-              @click.stop="deleteSkill(skill)"
-              @touchstart.stop.prevent="deleteSkill(skill)"
-              @mouseenter="showActionTooltip($event, 'Delete skill')"
-              @mouseleave="hideActionTooltip($event)"
-            >
-              ❌
-            </button>
-            <button
-              class="action-btn"
-              @click.stop="connectSkill(skill)"
-              @touchstart.stop.prevent="connectSkill(skill)"
-              @mouseenter="showActionTooltip($event, 'Connect to another skill. Left click on the destination.')"
-              @mouseleave="hideActionTooltip($event)"
-            >
-              🔗
-            </button>
           </div>
         </div>
       </div>
@@ -2648,6 +2665,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
             if (!treeEl) return lines;
 
             const bounds = treeEl.getBoundingClientRect();
+            const extendedBounds = {
+              width: bounds.width * 10,
+              height: bounds.height * 10,
+            };
             const size = parseInt(this.gridSize);
 
             // Calculate the offset based on tree position
@@ -2655,8 +2676,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
             const offsetY = this.treePosition.y % size;
 
             // Calculate number of lines needed
-            const numHorizontal = Math.ceil(bounds.height / size);
-            const numVertical = Math.ceil(bounds.width / size);
+            const numHorizontal = Math.ceil(extendedBounds.height / size);
+            const numVertical = Math.ceil(extendedBounds.width / size);
 
             // Add horizontal lines
             for (let i = 0; i <= numHorizontal; i++) {
@@ -2715,10 +2736,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
           } else {
             this.showGlobalGrid = true;
           }
+
+          window.addEventListener("resize", this.handleResize);
         },
         beforeUnmount() {
           // Clean up event listener
           document.removeEventListener("keydown", this.handleKeyboardShortcuts);
+          window.removeEventListener("resize", this.handleResize);
         },
         methods: {
           handleKeyboardShortcuts(event) {
@@ -3007,8 +3031,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 return;
               }
 
-              //instead want to deselect all skills
-              this.deselectAllSkills();
+              // Deselect all skills only if this skill is not already selected
+              if (!this.selectedSkills.includes(skill)) {
+                this.deselectAllSkills();
+              }
 
               // Hide all other action menus
               // this.skills.forEach((s) => {
@@ -3447,29 +3473,52 @@ input[type="range"]::-webkit-slider-thumb:hover {
             // Clamp scale between min and max values
             newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
 
-            // Only proceed if scale actually changed
-            if (newScale !== this.scale) {
-              // Get mouse position relative to the tree
-              const rect = event.target.getBoundingClientRect();
-              const mouseX = event.clientX - rect.left;
-              const mouseY = event.clientY - rect.top;
+            // // Only proceed if scale actually changed
+            // if (newScale !== this.scale) {
+            //   // Get mouse position relative to the tree
+            //   const rect = event.target.getBoundingClientRect();
+            //   const mouseX = event.clientX - rect.left;
+            //   const mouseY = event.clientY - rect.top;
 
-              // Calculate scale factor
-              const scaleFactor = newScale / this.scale;
+            //   // Calculate scale factor
+            //   const scaleFactor = newScale / this.scale;
 
-              // Update all skill positions relative to mouse position
-              this.skills.forEach((skill) => {
-                skill.x = mouseX + (skill.x - mouseX) * scaleFactor;
-                skill.y = mouseY + (skill.y - mouseY) * scaleFactor;
+            //   // Update all skill positions relative to mouse position
+            //   this.skills.forEach((skill) => {
+            //     skill.x = mouseX + (skill.x - mouseX) * scaleFactor;
+            //     skill.y = mouseY + (skill.y - mouseY) * scaleFactor;
+            //   });
+
+            //   const skillElements = document.querySelectorAll(".skill");
+            //   skillElements.forEach((element) => {
+            //     // element.style.transform = `scale(${newScale})`;
+            //     // Adjust the hit area for interactions
+            //     // element.style.width = `${60 - 10 / newScale}px`;
+            //     // element.style.height = `${60 - 10 / newScale}px`;
+            //   });
+
+            const container = document.querySelector(".zoom-tree");
+            if (container) {
+              container.style.transform = `translate(-25%, -25%) scale(${newScale})`;
+              // container.style.transformOrigin = "center center";
+            }
+            // const skills = document.querySelector(".skill-connections-container");
+            // if (skills) {
+            //   skills.style.transform = `scale(${newScale})`;
+            //   skills.style.transformOrigin = "center center";
+            // }
+            if (this.showGlobalGrid) {
+              // Update the tree position slightly to force reactivity
+              this.treePosition = {
+                x: this.treePosition.x,
+                y: this.treePosition.y,
+              };
+
+              // Force Vue to recompute the grid lines
+              this.$nextTick(() => {
+                this.$forceUpdate();
               });
-
-              const skillElements = document.querySelectorAll(".skill");
-              skillElements.forEach((element) => {
-                // element.style.transform = `scale(${newScale})`;
-                // Adjust the hit area for interactions
-                // element.style.width = `${60 - 10 / newScale}px`;
-                // element.style.height = `${60 - 10 / newScale}px`;
-              });
+              // }
 
               this.scale = newScale;
             }
@@ -4840,6 +4889,23 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.selectedSkills = copiedNodes;
             this.skills.push(...copiedNodes);
             this.saveToHistory();
+          },
+          handleResize() {
+            // Force recomputation of grid lines
+            this.gridSize = window.innerWidth <= 768 ? 80 : 120;
+
+            if (this.showGlobalGrid) {
+              // Update the tree position slightly to force reactivity
+              this.treePosition = {
+                x: this.treePosition.x,
+                y: this.treePosition.y,
+              };
+
+              // Force Vue to recompute the grid lines
+              this.$nextTick(() => {
+                this.$forceUpdate();
+              });
+            }
           },
         },
       }).mount("#app");
