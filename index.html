@@ -2873,11 +2873,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   const x = parseInt(posMatch[1]);
                   const y = parseInt(posMatch[2]);
 
+                  const initialX =
+                    this.config.grid.startX + (x - 1) * this.config.grid.spacing + offsetX;
+                  const initialY =
+                    this.config.grid.startY + (y - 1) * this.config.grid.spacing + offsetY;
+
+                  // Snap to grid
+                  // Use the same snapToGrid method as drag operations
+                  const snappedPos = this.snapToGrid(initialX, initialY);
+
                   const skill = {
                     id: ++this.skillIdCounter,
                     name: skillData["Skill Name"],
-                    x: this.config.grid.startX + (x - 1) * this.config.grid.spacing + offsetX,
-                    y: this.config.grid.startY + (y - 1) * this.config.grid.spacing + offsetY,
+                    x: snappedPos.x,
+                    y: snappedPos.y,
                     showActions: false,
                     level: skillData["Skill Level"],
                     // damage: skillData["Skill Damage"],
@@ -3269,6 +3278,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
               const dx = finalX - this.dragStartPos.x;
               const dy = finalY - this.dragStartPos.y;
 
+              if (!this.draggedElement || !this.draggedSkill) return; // Early return if elements are missing
               requestAnimationFrame(() => {
                 this.draggedElement.style.left = `${finalX}px`;
                 this.draggedElement.style.top = `${finalY}px`;
@@ -3780,11 +3790,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
               const spacing = isMobile ? 100 : this.config.grid.spacing;
               const verticalOffset = 40;
 
+              const initialX = startX + x * spacing;
+              const initialY =
+                this.config.grid.startY + (y - 1) * this.config.grid.spacing + verticalOffset;
+              const snappedPos = this.snapToGrid(initialX, initialY);
+
               const skill = {
                 id: ++this.skillIdCounter,
                 name: skillData["Skill Name"],
-                x: startX + x * spacing, // Removed the -1 since x now starts from 0
-                y: this.config.grid.startY + (y - 1) * this.config.grid.spacing + verticalOffset,
+                x: snappedPos.x,
+                y: snappedPos.y,
                 showActions: false,
                 level: skillData["Skill Level"],
                 // damage: skillData["Skill Damage"],
