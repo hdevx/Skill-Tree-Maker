@@ -2517,7 +2517,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
         },
         grid: {
-          spacing: 150,
+          spacing: 120,
           startX: 100,
           startY: 100,
         },
@@ -2598,7 +2598,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             snapThreshold: 8,
             mode: "edit",
             overlayColor: "#000000",
-            overlayOpacity: 50,
+            overlayOpacity: 75,
             showArrows: true,
             showGlobalGrid: false,
             gridOpacity: 12,
@@ -4044,6 +4044,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
               skillIdCounter: this.skillIdCounter,
               timestamp: new Date().toISOString(),
               maxPoints: this.maxPoints,
+              currentClassDescription: this.currentClassDescription,
+              overlayColor: this.overlayColor,
+              overlayOpacity: this.overlayOpacity,
             };
 
             // Only add state if it's different from the previous state
@@ -4090,13 +4093,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.skills = JSON.parse(JSON.stringify(state.skills));
             this.connections = JSON.parse(JSON.stringify(state.connections));
             this.currentName = state.currentName;
+            this.currentClassDescription = state.currentClassDescription;
+            this.skillIdCounter = state.skillIdCounter;
             this.currentBackgroundLink = state.currentBackgroundLink;
+            this.maxPoints = state.maxPoints;
+            this.overlayColor = state.overlayColor;
+            this.overlayOpacity = state.overlayOpacity;
 
             // Update background
-            const talentTree = document.querySelector(".talent-tree");
-            if (talentTree) {
-              talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('${this.currentBackgroundLink}')`;
-            }
+            this.updateBackground();
           },
 
           handleEnterKey(event) {
@@ -4574,13 +4579,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
             if (mode === "overwrite") {
               // Import using full data state
               Object.keys(this.loadedData.FullData).forEach((key) => {
+                if (key === "loadedData") {
+                  return;
+                }
+                console.log("loading for key", key);
                 this[key] = this.loadedData.FullData[key];
               });
-
-              if (this.loadedData["Background Image"]) {
-                this.currentBackgroundLink = this.loadedData["Background Image"];
-                this.updateBackground();
-              }
+              this.updateBackground();
             } else if (mode === "merge") {
               const offset = 0; // Increased offset for better visibility
               const idMap = {};
@@ -4824,8 +4829,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
             // Update copied nodes
             copiedNodes.forEach((node) => {
               node.id = ++this.skillIdCounter;
-              node.x += gridOffset;
-              node.y += gridOffset;
+              node.x += gridOffset / 2;
+              node.y += gridOffset / 2;
               node.showActions = true;
               node.shouldAnimate = true;
               node.name += " copy";
