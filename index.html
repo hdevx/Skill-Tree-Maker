@@ -1586,7 +1586,7 @@
 
       .grid-line.horizontal {
         width: 100%;
-        height: 1px;
+        height: 1px; /*increase to 2px to avoid missing lines when zooming out   */
       }
 
       .grid-line.vertical {
@@ -1871,10 +1871,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
       }
 
       .zoom-tree {
+        position: relative;
         transform: translate(-25%, -25%) scale(1);
         transform-origin: center center;
         width: 200%;
         height: 200%;
+
+        pointer-events: none;
+      }
+      .zoom-tree .skill-connections-container {
+        pointer-events: auto;
       }
     </style>
 
@@ -2737,6 +2743,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.showGlobalGrid = true;
           }
 
+          // Set zoom tree dimensions to exact pixel values
+          const zoomTree = document.querySelector(".zoom-tree");
+          if (zoomTree) {
+            zoomTree.style.width = `${window.innerWidth * 2}px`;
+            zoomTree.style.height = `${window.innerHeight * 2}px`;
+          }
+
           window.addEventListener("resize", this.handleResize);
         },
         beforeUnmount() {
@@ -2888,8 +2901,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 // Calculate center offset
                 const treeWidth = maxX - minX;
                 const treeHeight = maxY - minY;
-                const offsetX = (viewport.width - treeWidth) / 2 - treeWidth;
-                const offsetY = (viewport.height - treeHeight) / 2 - treeHeight / 2 + 100;
+                const offsetX = viewport.width - treeWidth - treeWidth / 2;
+                const offsetY = viewport.height - treeHeight - treeHeight / 2 + 250;
 
                 // Second pass: create skills with centered positions
                 data.Skills.forEach((skillData, index) => {
@@ -2968,6 +2981,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
               })
               .catch((error) => console.error("Error loading default config:", error));
           },
+          getAdjustedCoordinates(oldX, oldY, scale) {
+            // Calculate the offset factor using the quadratic function:
+            // f(s) = -0.5 * s^2 + 1.75 * s - 0.75
+            // const offsetFactor = -0.5 * scale * scale + 1.75 * scale - 0.75;
+
+            // // Adjust x and y using the corresponding window dimensions
+            // const x = oldX / scale + window.innerWidth * offsetFactor;
+            // const y = oldY / scale + window.innerHeight * offsetFactor;
+
+            const x = oldX / scale + (window.innerWidth / 2) * (2 - 1 / scale);
+            const y = oldY / scale + (window.innerHeight / 2) * (2 - 1 / scale);
+
+            return { x, y };
+          },
           handleClick(event) {
             if (this.isViewMode()) return;
             // Don't create skill if we just finished making a selection
@@ -2978,9 +3005,23 @@ input[type="range"]::-webkit-slider-thumb:hover {
             // return;
             // }
 
+            //base equation event.offsetX / this.scale + ( window.innerWidth) / 2
+            //scale 0.5 : event.offsetX * 2
+            //sclae 1 :  + window.innerWidth/2
+            //scale 2 : event.offsetX / this.scale + (1.5 * window.innerWidth) / 2
+            // x * 2 = 1.5
+            const adjustedCoordinates = this.getAdjustedCoordinates(
+              event.offsetX,
+              event.offsetY,
+              this.scale
+            );
+
             if (!this.isDragging && event.target.classList.contains("talent-tree")) {
               if (!this.isDragging && this.selectionBox === null) {
-                this.createSkill(event.offsetX, event.offsetY);
+                this.createSkill(
+                  adjustedCoordinates.x, // + window.innerWidth / 2,
+                  adjustedCoordinates.y // + window.innerHeight / 2
+                );
               }
             }
             this.isDragging = false;
@@ -3168,8 +3209,18 @@ input[type="range"]::-webkit-slider-thumb:hover {
             if (this.isViewMode()) return;
 
             event.preventDefault();
-            const pointer = event.touches ? event.touches[0] : event;
-
+            let pointerOld = event.touches ? event.touches[0] : event;
+            console.log("pointer before", pointerOld.clientX, pointerOld.clientY);
+            const adjustedCoordinates = this.getAdjustedCoordinates(
+              pointerOld.clientX,
+              pointerOld.clientY,
+              this.scale
+            );
+            let pointer = {
+              clientX: adjustedCoordinates.x,
+              clientY: adjustedCoordinates.y,
+            };
+            console.log("pointer", adjustedCoordinates.x, pointer.clientY);
             // Store initial positions of selected skills
             this.initialPositions = {};
             // this.selectedSkills.forEach((skill) => {
@@ -3217,8 +3268,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
           handleDrag(event) {
             if (!this.draggedSkill) return;
 
-            const pointer = event.touches ? event.touches[0] : event;
-
+            let pointerOld = event.touches ? event.touches[0] : event;
+            const adjustedCoordinates = this.getAdjustedCoordinates(
+              pointerOld.clientX,
+              pointerOld.clientY,
+              this.scale
+            );
+            let pointer = {
+              clientX: adjustedCoordinates.x,
+              clientY: adjustedCoordinates.y,
+              pageX: adjustedCoordinates.x,
+              pageY: adjustedCoordinates.y,
+            };
+            // pointer.pageX = 500;
+            // pointer.pageY = adjustedCoordinates.y;
             // Move selected skills
             // if (this.draggedSkill) {
             //     const dx = event.clientX - this.dragOffset.x - this.draggedSkill.x;
@@ -3416,9 +3479,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
             if (event.button === 0 && event.target.classList.contains("talent-tree")) {
               // Left click for selection box
               event.preventDefault();
+              let adjustedCoordinates = this.getAdjustedCoordinates(
+                event.offsetX,
+                event.offsetY,
+                this.scale
+              );
               this.initialClick = {
-                x: event.offsetX,
-                y: event.offsetY,
+                x: adjustedCoordinates.x,
+                y: adjustedCoordinates.y,
               };
               document.addEventListener("mousemove", this.handleSelection);
               document.addEventListener("mouseup", this.stopSelection);
@@ -3835,9 +3903,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
               // Adjust starting position and spacing based on viewport width
               const isMobile = window.innerWidth <= 768;
-              const startX = isMobile ? -40 : this.config.grid.startX;
+              const startX = isMobile
+                ? -40 + (window.innerWidth * 3) / 4
+                : this.config.grid.startX + (3 / 4) * window.innerWidth;
               const spacing = isMobile ? 100 : this.config.grid.spacing;
-              const verticalOffset = 40;
+              const verticalOffset = 40 + (window.innerHeight * 3) / 4;
 
               const initialX = startX + x * spacing;
               const initialY =
@@ -3944,8 +4014,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
           getTooltipPosition(skill) {
             // Get the center position of the skill relative to the viewport
             const skillCenter = skill.x + 30; // 30 is half the skill width
-            const viewportCenter = window.innerWidth / 2;
+            const viewportCenterOld = window.innerWidth / 2;
 
+            const viewportCenter = this.getAdjustedCoordinates(viewportCenterOld, 0, this.scale).x;
             // If skill is in the right half of the screen, show tooltip on the left
             // Otherwise, show it on the right
             return skillCenter > viewportCenter ? "tooltip-left" : "tooltip-right";
@@ -4282,13 +4353,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 const modal = document.createElement("div");
                 modal.className = "share-modal";
                 modal.innerHTML = `
-                                <button class="close-btn">✕</button>
-                                <h3>Share Your Skill Tree</h3>
-                                <div class="share-link">${shareableUrl}</div>
-                                <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
-                                    Copy Link
-                                </button>
-                            `;
+                                            <button class="close-btn">✕</button>
+                                            <h3>Share Your Skill Tree</h3>
+                                            <div class="share-link">${shareableUrl}</div>
+                                            <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
+                                                Copy Link
+                                            </button>
+                                        `;
                 document.body.appendChild(modal);
 
                 // Update click handler to include close button
@@ -4769,12 +4840,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
           // },
 
           // Add these new methods
-          handleSelection(event) {
+          handleSelection(eventOld) {
             // Check if we're interacting with a skill or other UI element
-            if (!event.target.classList.contains("talent-tree")) {
+            if (!eventOld.target) {
               // event.target.classList is undefined if dragged off screen. maybe use this to shift the view
               return;
             }
+            let adjustedCoordinates = this.getAdjustedCoordinates(
+              eventOld.clientX,
+              eventOld.clientY,
+              this.scale
+            );
+            let event = {
+              clientX: adjustedCoordinates.x,
+              clientY: adjustedCoordinates.y,
+              offsetX: adjustedCoordinates.x,
+              offsetY: adjustedCoordinates.y,
+            };
+
             const moveThreshold = 5; // pixels
             const deltaX = event.offsetX - this.initialClick.x;
             const deltaY = event.offsetY - this.initialClick.y;
@@ -4893,6 +4976,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
           handleResize() {
             // Force recomputation of grid lines
             this.gridSize = window.innerWidth <= 768 ? 80 : 120;
+
+            const zoomTree = document.querySelector(".zoom-tree");
+            if (zoomTree) {
+              zoomTree.style.width = `${window.innerWidth * 2}px`;
+              zoomTree.style.height = `${window.innerHeight * 2}px`;
+            }
 
             if (this.showGlobalGrid) {
               // Update the tree position slightly to force reactivity
