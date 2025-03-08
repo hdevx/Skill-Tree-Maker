@@ -43,14 +43,14 @@ Setup in progress, using default Playwright.
 | Background Image   | ✅ Complete     | ❌ Needs Tests      |
 | Tree Merging       | ✅ Complete     | ❌ Needs Tests      |
 | Prerequsite Skills | ✅ Complete     | ❌ Needs Tests      |
-| Multi-Skill Select | ⚠️ Not Finished | ❌ Needs Tests      |
-| Multi-Skill Move   | ⚠️ Not Finished | ❌ Needs Tests      |
+| Multi-Skill Select | ✅ Complete     | ❌ Needs Tests      |
+| Multi-Skill Move   | ✅ Complete     | ❌ Needs Tests      |
 | Multi-Skill Delete | ❌ Not Started  | ❌ Needs Tests      |
 | Multi-Skill Edit   | ❌ Not Started  | ❌ Needs Tests      |
 | Node Styling       | ⚠️ Not Finished | ❌ Needs Tests      |
 | Active or Passive  | ❌ Not Started  | ❌ Needs Tests      |
-| Zoom Scaling Fix   | ❌ Not Started  | ❌ Needs Tests      |
-| Grid System        | ⚠️ Not Finished | ⚠️ Partial Coverage |
+| Zoom Scaling Fix   | ✅ Complete     | ❌ Needs Tests      |
+| Grid System        | ✅ Complete     | ⚠️ Partial Coverage |
 | Mobile Support     | ⚠️ Not Finished | ⚠️ Partial Coverage |
 
 Legend:
