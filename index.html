@@ -1958,6 +1958,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
         @touchstart="handleTreeTouchStart"
         @touchmove.prevent="handleTreeTouchMove"
         @touchend="handleTreeTouchEnd"
+        @touchcancel="handleTreeTouchEnd"
         @contextmenu.prevent
       >
         <div class="zoom-tree">
@@ -3210,7 +3211,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             event.preventDefault();
             let pointerOld = event.touches ? event.touches[0] : event;
-            console.log("pointer before", pointerOld.clientX, pointerOld.clientY);
             const adjustedCoordinates = this.getAdjustedCoordinates(
               pointerOld.clientX,
               pointerOld.clientY,
@@ -3220,7 +3220,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
               clientX: adjustedCoordinates.x,
               clientY: adjustedCoordinates.y,
             };
-            console.log("pointer", adjustedCoordinates.x, pointer.clientY);
+
             // Store initial positions of selected skills
             this.initialPositions = {};
             // this.selectedSkills.forEach((skill) => {
@@ -3533,7 +3533,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
             event.preventDefault();
 
             // Determine zoom direction
-            const zoomIn = event.deltaY < 0;
+            let zoomIn = event.deltaY < 0;
+            if (event.deltaY !== undefined) {
+              // Mouse wheel
+              zoomIn = event.deltaY < 0;
+            } else {
+              // Pinch zoom
+              zoomIn = event.scale > 1;
+            }
 
             // Calculate new scale
             let newScale = this.scale + (zoomIn ? this.scaleStep : -this.scaleStep);
@@ -3904,10 +3911,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
               // Adjust starting position and spacing based on viewport width
               const isMobile = window.innerWidth <= 768;
               const startX = isMobile
-                ? -40 + (window.innerWidth * 3) / 4
+                ? -40 + (window.innerWidth * 3) / 5
                 : this.config.grid.startX + (3 / 4) * window.innerWidth;
               const spacing = isMobile ? 100 : this.config.grid.spacing;
-              const verticalOffset = 40 + (window.innerHeight * 3) / 4;
+              const verticalOffset = 40 + (window.innerHeight * 3) / 5;
 
               const initialX = startX + x * spacing;
               const initialY =
@@ -3980,12 +3987,46 @@ input[type="range"]::-webkit-slider-thumb:hover {
               if (this.draggedSkill) {
                 this.stopDrag();
               }
+            } else if (event.touches.length === 2) {
+              // Initialize pinch zoom
+              this.isPanning = false;
+              const touch1 = event.touches[0];
+              const touch2 = event.touches[1];
+              this.lastTouchDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+              );
             }
           },
+          handleTouchZoom(event) {
+            if (event.touches.length !== 2) return;
 
+            const touch1 = event.touches[0];
+            const touch2 = event.touches[1];
+            const currentDistance = Math.hypot(
+              touch2.clientX - touch1.clientX,
+              touch2.clientY - touch1.clientY
+            );
+
+            if (this.lastTouchDistance) {
+              const scale = currentDistance / this.lastTouchDistance;
+              this.handleZoom({
+                preventDefault: () => {},
+                scale: scale,
+                deltaY: undefined, // Add this to indicate it's a pinch zoom
+              });
+            }
+
+            this.lastTouchDistance = currentDistance;
+          },
           handleTreeTouchMove(event) {
-            if (!this.isPanning || event.touches.length !== 1) return;
+            if (event.touches.length === 2) {
+              // Handle pinch zoom
+              this.handleTouchZoom(event);
+              return;
+            }
 
+            if (!this.isPanning || event.touches.length !== 1) return;
             const touch = event.touches[0];
             const deltaX = touch.clientX - this.touchStartX;
             const deltaY = touch.clientY - this.touchStartY;
@@ -3995,6 +4036,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
               skill.x += deltaX;
               skill.y += deltaY;
             });
+
+            // Update tree position for grid
+            this.treePosition = {
+              x: this.treePosition.x + deltaX,
+              y: this.treePosition.y + deltaY,
+            };
 
             // Force grid recomputation
             if (this.showGlobalGrid) {
@@ -4009,6 +4056,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.isPanning = false;
             this.touchStartX = null;
             this.touchStartY = null;
+            this.lastTouchDistance = null;
           },
 
           getTooltipPosition(skill) {
@@ -4353,13 +4401,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 const modal = document.createElement("div");
                 modal.className = "share-modal";
                 modal.innerHTML = `
-                                            <button class="close-btn">✕</button>
-                                            <h3>Share Your Skill Tree</h3>
-                                            <div class="share-link">${shareableUrl}</div>
-                                            <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
-                                                Copy Link
-                                            </button>
-                                        `;
+                                              <button class="close-btn">✕</button>
+                                              <h3>Share Your Skill Tree</h3>
+                                              <div class="share-link">${shareableUrl}</div>
+                                              <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
+                                                  Copy Link
+                                              </button>
+                                          `;
                 document.body.appendChild(modal);
 
                 // Update click handler to include close button
