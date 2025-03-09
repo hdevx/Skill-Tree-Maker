@@ -447,6 +447,9 @@
       .skill.inactive img {
         filter: grayscale(100%) brightness(0.9);
       }
+      .skill.unlockable img {
+        filter: brightness(0.9); /* Slightly dimmed but colored */
+      }
 
       .options-button {
         position: fixed;
@@ -2008,6 +2011,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
               class="skill"
               :class="{
                         'inactive': skill.currentPoints === 0,
+                        'unlockable': canAddPoint(skill, 'no warning') && skill.currentPoints === 0,
                         'animate-in': skill.shouldAnimate,
                         'initial-skill': index < 4,
                         'skilled': skill.currentPoints > 0
@@ -4627,7 +4631,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
               y: Math.round((y - offsetY + gridOffset / 2) / size) * size + offsetY - 30,
             };
           },
-          canAddPoint(skill) {
+          canAddPoint(skill, option = "show warning") {
             // Check if adding a point would exceed max points
             if (this.totalPointsSpent >= this.maxPoints) {
               return false;
@@ -4636,20 +4640,22 @@ input[type="range"]::-webkit-slider-thumb:hover {
             // Check if required points are met
             if (skill.requiredPoints && this.totalPointsSpent < skill.requiredPoints) {
               // Create and show toast notification
-              const toast = document.createElement("div");
-              toast.className = "toast-notification";
-              toast.textContent = `${skill.name} requires ${skill.requiredPoints} points spent. Current: ${this.totalPointsSpent}`;
-              document.body.appendChild(toast);
+              if (option === "show warning") {
+                const toast = document.createElement("div");
+                toast.className = "toast-notification";
+                toast.textContent = `${skill.name} requires ${skill.requiredPoints} points spent. Current: ${this.totalPointsSpent}`;
+                document.body.appendChild(toast);
 
-              // Trigger reflow to ensure animation plays
-              toast.offsetHeight;
-              toast.classList.add("show");
+                // Trigger reflow to ensure animation plays
+                toast.offsetHeight;
+                toast.classList.add("show");
 
-              // Remove toast after animation
-              setTimeout(() => {
-                toast.classList.remove("show");
-                setTimeout(() => toast.remove(), 300); // Remove after fade out
-              }, 2000);
+                // Remove toast after animation
+                setTimeout(() => {
+                  toast.classList.remove("show");
+                  setTimeout(() => toast.remove(), 300); // Remove after fade out
+                }, 2000);
+              }
               return false;
             }
 
@@ -4674,32 +4680,34 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 });
 
                 if (!allPrereqsUnlocked) {
-                  // Show toast notification for prerequisite requirement
-                  const toast = document.createElement("div");
-                  toast.className = "toast-notification";
+                  if (option === "show warning") {
+                    // Show toast notification for prerequisite requirement
+                    const toast = document.createElement("div");
+                    toast.className = "toast-notification";
 
-                  // Get list of missing prerequisites
-                  const missingPrereqs = incomingConnections
-                    .filter((conn) => {
-                      const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                      return !prereqSkill || prereqSkill.currentPoints === 0;
-                    })
-                    .map((conn) => {
-                      const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                      return prereqSkill.name;
-                    })
-                    .join(", ");
+                    // Get list of missing prerequisites
+                    const missingPrereqs = incomingConnections
+                      .filter((conn) => {
+                        const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                        return !prereqSkill || prereqSkill.currentPoints === 0;
+                      })
+                      .map((conn) => {
+                        const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                        return prereqSkill.name;
+                      })
+                      .join(", ");
 
-                  toast.textContent = `${skill.name} requires: ${missingPrereqs} to unlock`;
-                  document.body.appendChild(toast);
+                    toast.textContent = `${skill.name} requires: ${missingPrereqs} to unlock`;
+                    document.body.appendChild(toast);
 
-                  toast.offsetHeight;
-                  toast.classList.add("show");
+                    toast.offsetHeight;
+                    toast.classList.add("show");
 
-                  setTimeout(() => {
-                    toast.classList.remove("show");
-                    setTimeout(() => toast.remove(), 300);
-                  }, 3000);
+                    setTimeout(() => {
+                      toast.classList.remove("show");
+                      setTimeout(() => toast.remove(), 300);
+                    }, 3000);
+                  }
                   return false;
                 }
               } else {
@@ -4711,27 +4719,29 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 });
 
                 if (!hasUnlockedPrereq) {
-                  const prereqSkills = incomingConnections
-                    .map((conn) => {
-                      const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                      return prereqSkill.name;
-                    })
-                    .join(" or ");
+                  if (option === "show warning") {
+                    const prereqSkills = incomingConnections
+                      .map((conn) => {
+                        const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                        return prereqSkill.name;
+                      })
+                      .join(" or ");
 
-                  // Show toast notification for prerequisite requirement
-                  const toast = document.createElement("div");
-                  toast.className = "toast-notification";
-                  toast.textContent = `${skill.name} requires: ${prereqSkills} to unlock`;
+                    // Show toast notification for prerequisite requirement
+                    const toast = document.createElement("div");
+                    toast.className = "toast-notification";
+                    toast.textContent = `${skill.name} requires: ${prereqSkills} to unlock`;
 
-                  document.body.appendChild(toast);
+                    document.body.appendChild(toast);
 
-                  toast.offsetHeight;
-                  toast.classList.add("show");
+                    toast.offsetHeight;
+                    toast.classList.add("show");
 
-                  setTimeout(() => {
-                    toast.classList.remove("show");
-                    setTimeout(() => toast.remove(), 300);
-                  }, 3000);
+                    setTimeout(() => {
+                      toast.classList.remove("show");
+                      setTimeout(() => toast.remove(), 300);
+                    }, 3000);
+                  }
                   return false;
                 }
               }
