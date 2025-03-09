@@ -3583,21 +3583,22 @@ input[type="range"]::-webkit-slider-thumb:hover {
             //   skills.style.transform = `scale(${newScale})`;
             //   skills.style.transformOrigin = "center center";
             // }
-            if (this.showGlobalGrid) {
-              // Update the tree position slightly to force reactivity
-              this.treePosition = {
-                x: this.treePosition.x,
-                y: this.treePosition.y,
-              };
 
-              // Force Vue to recompute the grid lines
-              this.$nextTick(() => {
-                this.$forceUpdate();
-              });
-              // }
+            // if (this.showGlobalGrid) {
+            // Update the tree position slightly to force reactivity
+            this.treePosition = {
+              x: this.treePosition.x,
+              y: this.treePosition.y,
+            };
 
-              this.scale = newScale;
-            }
+            // Force Vue to recompute the grid lines
+            this.$nextTick(() => {
+              this.$forceUpdate();
+            });
+            // }
+
+            this.scale = newScale;
+            // }
           },
 
           exportToJson() {
@@ -4374,12 +4375,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 } else {
                   // when scaling fix, all origin got moved to the top left a full screen
                   //tree position doesnt work need tomove skills
-                  const offsetX = window.innerWidth;
-                  const offsetY = window.innerHeight;
-
                   this.skills.forEach((skill) => {
-                    skill.x += offsetX;
-                    skill.y += offsetY;
+                    skill.x += window.innerWidth;
+                    skill.y += window.innerHeight;
                   });
                 }
 
@@ -4769,6 +4767,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 // console.log("loading for key", key);
                 this[key] = this.loadedData.FullData[key];
               });
+              console.log("prerequisiteMode", this.loadedData.FullData.prerequisiteMode);
+              if (this.loadedData.FullData.prerequisiteMode !== undefined) {
+              } else {
+                this.skills.forEach((skill) => {
+                  skill.x += window.innerWidth / 2;
+                  skill.y += window.innerHeight / 2;
+                });
+              }
+
               this.updateBackground();
             } else if (mode === "merge") {
               const offset = 0; // Increased offset for better visibility
