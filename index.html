@@ -4369,11 +4369,18 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${this.currentBackgroundLink}')`;
                 }
 
-                if (data.prerequisiteMode) {
+                if (data.prerequisiteMode !== undefined) {
                   this.prerequisiteMode = data.prerequisiteMode;
                 } else {
                   // when scaling fix, all origin got moved to the top left a full screen
                   //tree position doesnt work need tomove skills
+                  const offsetX = window.innerWidth;
+                  const offsetY = window.innerHeight;
+
+                  this.skills.forEach((skill) => {
+                    skill.x += offsetX;
+                    skill.y += offsetY;
+                  });
                 }
 
                 // Mark tree as loaded
