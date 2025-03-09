@@ -3478,6 +3478,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
           startPan(event) {
             if (event.button === 0 && event.target.classList.contains("talent-tree")) {
               // Left click for selection box
+              if (this.isViewMode()) return;
               event.preventDefault();
               let adjustedCoordinates = this.getAdjustedCoordinates(
                 event.offsetX,
@@ -4368,6 +4369,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   talentTree.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.85)), url('${this.currentBackgroundLink}')`;
                 }
 
+                if (data.prerequisiteMode) {
+                  this.prerequisiteMode = data.prerequisiteMode;
+                } else {
+                  // when scaling fix, all origin got moved to the top left a full screen
+                  //tree position doesnt work need tomove skills
+                }
+
                 // Mark tree as loaded
                 setTimeout(() => {
                   talentTree.classList.add("loaded");
@@ -4727,6 +4735,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             return true;
           },
           toggleSkillSelection(skill) {
+            if (this.isViewMode()) return;
             //  if n
             if (!skill.showActions) {
               skill.showActions = true;
@@ -4750,7 +4759,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 if (key === "loadedData") {
                   return;
                 }
-                console.log("loading for key", key);
+                // console.log("loading for key", key);
                 this[key] = this.loadedData.FullData[key];
               });
               this.updateBackground();
