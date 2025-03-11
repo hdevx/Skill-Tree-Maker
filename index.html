@@ -26,10 +26,10 @@
       {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        "name": "RPG Skill Tree Designer",
+        "name": "Skill Tree Designer | Drag and Drop Online Editor",
         "image": "https://www.rpgskilltreegenerator.com/icons/android-chrome-512x512.png",
         "url": "https://www.rpgskilltreegenerator.com/",
-        "description": "Type a class idea, like Holy Necromancer or Garlic Knight, and get an RPG skill tree with JSON export."
+        "description": "Instantly customize your own skill trees, talent trees, and ability trees with this free online skill tree maker. Type a class idea, like Holy Necromancer or Garlic Knight, and get an RPG skill tree with JSON export."
       }
     </script>
 
@@ -2140,7 +2140,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
         <button
           class="discord-button"
           @click="openDiscord"
-          @mouseenter="showActionTooltip($event, 'Join the Discord, Feedback is Welcome!')"
+          @mouseenter="showActionTooltip($event, 'Feedback is Welcome!')"
           @mouseleave="hideActionTooltip($event)"
         >
           <img src="/img/discord-logo.png" alt="" style="width: 17px; height: 17px" />
@@ -3639,7 +3639,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 };
               }),
               "Class Name": this.currentName,
-              FullData: this.$data,
+              FullData: (() => {
+                const fullData = { ...this.$data };
+                // Remove specific properties you don't want to include
+                delete fullData.recentBackgrounds;
+                delete fullData.loadedData;
+                delete fullData.history;
+                // delete fullData.customImages;
+                return fullData;
+              })(),
+              // FullData: this.$data,
               // "FullData": {
               //     ...this.$data,
               //     recentBackgrounds: [], // Clear recent backgrounds from full data
@@ -5014,28 +5023,29 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             const selectedSkills = this.skills.filter((skill) => skill.showActions);
 
-            if (selectedSkills.length === 0) {
-              return;
-            } else {
-              this.clipboard = selectedSkills;
-            }
+            // if (selectedSkills.length === 0) {
+            //   return;
+            // } else {
+            //   this.clipboard = selectedSkills;
+            // }
 
-            console.log("Copied nodes:", this.clipboard);
+            // console.log("Copied nodes:", this.clipboard);
           },
 
           paste() {
-            this.deselectAllSkills();
             // append "copy" to the skill name
             // adjust positions by a small offset so they are not perfectly overlapping
             // add nodes from clipboard to the state
             // update the selected nodes to be the newly pasted ones
 
-            if (this.clipboard.length === 0) {
-              return;
-            }
+            // if (this.clipboard.length === 0) {
+            //   return;
+            // }
 
             // Deep copy the clipboard nodes
-            const copiedNodes = JSON.parse(JSON.stringify(this.clipboard));
+            const copiedNodes = JSON.parse(JSON.stringify(this.selectedSkills));
+
+            this.deselectAllSkills();
             // Calculate grid-based offset
             const gridOffset = this.showGlobalGrid ? parseInt(this.gridSize) : 120; // Use grid size if enabled, otherwise default to 120px
 
