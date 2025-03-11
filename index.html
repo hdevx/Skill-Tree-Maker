@@ -1395,7 +1395,7 @@
         .discord-button {
           left: 70px;
           bottom: 20px;
-          position: absolute;
+          position: fixed;
         }
 
         .points-display {
@@ -2784,20 +2784,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
               }
             } else if (event.key === "Delete") {
               // Get all selected skills
-              const selectedSkills = this.skills.filter((skill) =>
-                this.selectedSkills.includes(skill.id)
-              );
-
-              // Delete each selected skill using existing deleteSkill method
-              selectedSkills.forEach((skill) => {
-                this.deleteSkill(skill);
-              });
-
-              // Clear selection
-              this.deselectAllSkills();
-
-              // Save state to history
-              this.saveToHistory();
+              // const selectedSkills = this.skills.filter((skill) =>
+              //   this.selectedSkills.includes(skill.id)
+              // );
+              // // Delete each selected skill using existing deleteSkill method
+              // selectedSkills.forEach((skill) => {
+              //   this.deleteSkill(skill);
+              // });
+              // // Clear selection
+              // this.deselectAllSkills();
+              // // Save state to history
+              // this.saveToHistory();
             }
           },
           loadDefaultConfig() {
@@ -3161,7 +3158,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.connections = this.connections.filter(
               (c) => c.from !== skill.id && c.to !== skill.id
             );
-            this.saveToHistory();
           },
 
           connectSkill(skill) {
@@ -3606,6 +3602,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
 
           exportToJson() {
+            this.deselectAllSkills();
+
             const exportData = {
               Skills: this.skills.map((skill) => {
                 // Find all connections where this skill is the prerequisite
@@ -3645,6 +3643,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 delete fullData.recentBackgrounds;
                 delete fullData.loadedData;
                 delete fullData.history;
+                delete fullData.clipboard;
+                delete fullData.selectedSkills;
                 // delete fullData.customImages;
                 return fullData;
               })(),
@@ -4366,13 +4366,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 this.currentBackgroundLink = data.currentBackgroundLink;
                 this.skillIdCounter = data.skillIdCounter;
 
-                if (data.name) {
-                  document.title = `${data.name} | RPG Skill Tree Maker`;
+                if (data.currentName) {
+                  document.title = `${data.currentName} | Skill Tree Maker`;
                   const metaDescription = document.querySelector('meta[name="description"]');
                   if (metaDescription) {
                     metaDescription.setAttribute(
                       "content",
-                      `Check out this ${data.name} skill tree created with RPG Skill Tree Maker. You can view or customize it in a drag and drop editor, or download the JSON file.`
+                      `Check out this ${data.currentName} skill tree created with RPG Skill Tree Maker. You can view or customize it in a drag and drop editor, or download the JSON file.`
                     );
                   }
                 }
@@ -4393,6 +4393,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     skill.y += window.innerHeight;
                   });
                 }
+                console.log("adjusting visiblity");
+                this.putTreeInViewport();
 
                 // Mark tree as loaded
                 setTimeout(() => {
@@ -4776,6 +4778,62 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             console.log("selectedSkills", this.selectedSkills);
           },
+          putTreeInViewport() {
+            const bounds = this.skills.reduce(
+              (acc, skill) => {
+                return {
+                  minX: Math.min(acc.minX, skill.x),
+                  minY: Math.min(acc.minY, skill.y),
+                  maxX: Math.max(acc.maxX, skill.x + 60), // Add skill width
+                  maxY: Math.max(acc.maxY, skill.y + 60), // Add skill height
+                };
+              },
+              {
+                minX: Infinity,
+                minY: Infinity,
+                maxX: -Infinity,
+                maxY: -Infinity,
+              }
+            );
+
+            // Calculate tree dimensions
+            const treeWidth = bounds.maxX - bounds.minX;
+            const treeHeight = bounds.maxY - bounds.minY;
+
+            // Calculate viewport dimensions accounting for zoom container
+            const viewportWidth = window.innerWidth * 2; // Account for zoom-tree width being 200%
+            const viewportHeight = window.innerHeight * 2; // Account for zoom-tree height being 200%
+
+            // Calculate center position
+            const centerX = (viewportWidth - treeWidth) / 2;
+            const centerY = (viewportHeight - treeHeight) / 2;
+
+            console.log("centerX", centerX);
+            console.log("centerY", centerY);
+
+            console.log("bounds.minX", bounds.minX);
+            console.log("bounds.minY", bounds.minY);
+
+            // Calculate required offset to center the tree
+            const offsetX = centerX - bounds.minX;
+            const offsetY = centerY - bounds.minY;
+
+            // Adjust all skill positions
+            this.skills.forEach((skill) => {
+              skill.x += offsetX;
+              skill.y += offsetY;
+            });
+
+            // Reset zoom and position
+            this.scale = 1;
+            this.treePosition = { x: 0, y: 0 };
+
+            // Force update of zoom container
+            const container = document.querySelector(".zoom-tree");
+            if (container) {
+              container.style.transform = `translate(-25%, -25%) scale(${this.scale})`;
+            }
+          },
           loadTree(mode) {
             if (mode === "overwrite") {
               // Import using full data state
@@ -4794,9 +4852,45 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   skill.y += window.innerHeight / 2;
                 });
               }
+              // console.log("not adjusting visiblity");
+              this.putTreeInViewport();
+              // Find bounding box of all skills
+              // const bounds = this.skills.reduce(
+              //   (acc, skill) => {
+              //     return {
+              //       minX: Math.min(acc.minX, skill.x),
+              //       minY: Math.min(acc.minY, skill.y),
+              //       maxX: Math.max(acc.maxX, skill.x + 60), // Add skill width
+              //       maxY: Math.max(acc.maxY, skill.y + 60), // Add skill height
+              //     };
+              //   },
+              //   {
+              //     minX: Infinity,
+              //     minY: Infinity,
+              //     maxX: -Infinity,
+              //     maxY: -Infinity,
+              //   }
+              // );
+
+              // // Calculate viewport adjustments based on current zoom
+              // const viewportWidth = window.innerWidth;
+              // const viewportHeight = window.innerHeight;
+
+              // // Position skills to be visible in viewport
+              // const offsetX = bounds.minX - viewportWidth * 0.7; // Add 10% padding
+              // const offsetY = bounds.minY - viewportHeight * 0.7;
+
+              // // Adjust all skill positions
+              // this.skills.forEach((skill) => {
+              //   skill.x -= offsetX;
+              //   skill.y -= offsetY;
+              // });
+
+              // this.handleZoom();
 
               this.updateBackground();
             } else if (mode === "merge") {
+              this.deselectAllSkills();
               const offset = 0; // Increased offset for better visibility
               const idMap = {};
 
@@ -5023,29 +5117,30 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             const selectedSkills = this.skills.filter((skill) => skill.showActions);
 
-            // if (selectedSkills.length === 0) {
-            //   return;
-            // } else {
-            //   this.clipboard = selectedSkills;
-            // }
+            if (selectedSkills.length === 0) {
+              return;
+            } else {
+              this.clipboard = selectedSkills;
+            }
 
             // console.log("Copied nodes:", this.clipboard);
           },
 
           paste() {
+            this.deselectAllSkills();
+
             // append "copy" to the skill name
             // adjust positions by a small offset so they are not perfectly overlapping
             // add nodes from clipboard to the state
             // update the selected nodes to be the newly pasted ones
 
-            // if (this.clipboard.length === 0) {
-            //   return;
-            // }
+            if (this.clipboard.length === 0) {
+              return;
+            }
 
             // Deep copy the clipboard nodes
-            const copiedNodes = JSON.parse(JSON.stringify(this.selectedSkills));
+            const copiedNodes = JSON.parse(JSON.stringify(this.clipboard));
 
-            this.deselectAllSkills();
             // Calculate grid-based offset
             const gridOffset = this.showGlobalGrid ? parseInt(this.gridSize) : 120; // Use grid size if enabled, otherwise default to 120px
 
@@ -5065,6 +5160,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.saveToHistory();
           },
           handleResize() {
+            this.putTreeInViewport();
+
             // Force recomputation of grid lines
             this.gridSize = window.innerWidth <= 768 ? 80 : 120;
 
@@ -5073,6 +5170,23 @@ input[type="range"]::-webkit-slider-thumb:hover {
               zoomTree.style.width = `${window.innerWidth * 2}px`;
               zoomTree.style.height = `${window.innerHeight * 2}px`;
             }
+
+            //this keeps it in place but anchors it from grid
+            // const oldWidth = this.prevWindowWidth || window.innerWidth;
+            // const oldHeight = this.prevWindowHeight || window.innerHeight;
+
+            // // Calculate the change in dimensions
+            // const widthDiff = window.innerWidth - oldWidth;
+            // const heightDiff = window.innerHeight - oldHeight;
+            // // Adjust all skill positions based on window size change
+            // this.skills.forEach((skill) => {
+            //   skill.x += widthDiff; // Move half the width difference
+            //   skill.y += heightDiff; // Move half the height difference
+            // });
+
+            // // Store new dimensions for next resize
+            // this.prevWindowWidth = window.innerWidth;
+            // this.prevWindowHeight = window.innerHeight;
 
             if (this.showGlobalGrid) {
               // Update the tree position slightly to force reactivity
