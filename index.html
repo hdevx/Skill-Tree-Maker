@@ -59,6 +59,7 @@
     />
 
     <script src="/lib/vue.global.js"></script>
+    <!-- <script src="/lib/vue.global.prod.min.js"></script> -->
     <style>
       body {
         background: #000000;
@@ -113,6 +114,9 @@
         touch-action: none;
         -webkit-tap-highlight-color: transparent;
         /* Removes tap highlight on iOS */
+
+        backface-visibility: hidden; /* Reduce painting */
+        perspective: 1000; /* Create stacking context for better performance */
       }
 
       .skill:hover img {
@@ -322,6 +326,8 @@
           width: 45px;
           /* Smaller skill icons on mobile */
           height: 45px;
+          margin-left: 5px;
+          margin-top: 5px;
         }
 
         /* Adjust class title for mobile */
@@ -442,6 +448,10 @@
       .skill img {
         filter: brightness(1);
         transition: all 0.2s ease;
+
+        transform: translate3d(0, 0, 0);
+        will-change: transform;
+        backface-visibility: hidden;
       }
 
       .skill.inactive img {
@@ -887,6 +897,11 @@
         align-items: center;
         justify-content: center;
         font-size: 14px;
+      }
+
+      .generate-controls .close-btn-generate:focus {
+        outline: none;
+        box-shadow: none;
       }
 
       @keyframes slideDown {
@@ -1911,6 +1926,31 @@ input[type="range"]::-webkit-slider-thumb:hover {
       }
       .zoom-tree .skill-connections-container {
         pointer-events: auto;
+
+        /* will-change: transform; */
+      }
+      .rank-btn {
+        background: rgba(74, 74, 74, 0.7);
+        color: #ffd100;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .rank-span {
+        font-size: 14px;
+        color: #ffd100;
+      }
+
+      .rank-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .rank-btn:hover:not(:disabled) {
+        background: rgba(90, 90, 90, 0.8);
       }
     </style>
 
@@ -1993,7 +2033,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
         @contextmenu.prevent
       >
         <div class="zoom-tree">
-          <div v-if="showGlobalGrid" class="grid-overlay" :style="gridStyle">
+          <div v-show="showGlobalGrid" class="grid-overlay" :style="gridStyle">
             <!-- Grid lines will be added dynamically -->
             <div
               v-for="line in gridLines"
@@ -2004,7 +2044,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             ></div>
           </div>
           <div
-            v-if="selectionBox"
+            v-if="this.selectionBox"
             class="selection-box"
             :style="{
                 left: `${Math.min(selectionBox.x, selectionBox.x + selectionBox.width)}px`,
@@ -2022,8 +2062,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
               class="connection"
               :class="{ active: isConnectionActive(connection), 'connection-hover': connection.isHovered }"
               :style="getConnectionStyle(connection)"
-              @mouseenter="connection.isHovered = true"
-              @mouseleave="connection.isHovered = false"
+              @mouseenter="!isPanning && (connection.isHovered = true)"
+              @mouseleave="!isPanning && (connection.isHovered = false)"
               @click.stop="removeConnection(connection)"
               @touchstart.stop.prevent="removeConnection(connection)"
             >
@@ -2046,6 +2086,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                         //'selected': selectedSkills.includes(skill.id)'
                     }"
               :style="{
+                //transform: `translate3d(${skill.x}px, ${skill.y}px, 0)`,
                         left: skill.x + 'px',
                         top: skill.y + 'px',
                         opacity: skill.shouldAnimate ? 1 : 0
@@ -2078,7 +2119,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
               <!-- Add the tooltip -->
               <div
                 class="skill-tooltip"
-                v-if="skill.showTooltip"
+                v-show="skill.showTooltip"
                 :class="getTooltipPosition(skill)"
               >
                 <h3>{{ skill.name }}</h3>
@@ -2093,7 +2134,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
                       class="resource-row"
                       :style="{color: r.color}"
                     >
-                      {{ r.name }}{{ r.value ? ': ' + r.value : '' }}
+                      {{ r.name }}{{ r.value ? ': ' + (r.value.toLowerCase().includes('rank') ?
+                      calculateRankValue(r.value, skill.rank || 1) : r.value) : '' }}
                     </div>
                   </div>
                 </div>
@@ -2101,7 +2143,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
               </div>
 
               <!-- Action buttons -->
-              <div v-if="skill.showActions" class="skill-actions">
+              <div v-show="skill.showActions" class="skill-actions">
                 <button
                   class="action-btn"
                   @click.stop="editSkill(skill)"
@@ -2441,7 +2483,25 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 @keyup.enter="saveEdit"
                 ref="nameInput"
               />
+              <!-- <div style="display: flex; align-items: center; gap: 5px">
+                <button
+                  class="rank-btn"
+                  @click="decrementRank(editingSkill)"
+                  :disabled="editingSkill.rank <= 1"
+                >
+                  ←
+                </button>
+                <span class="rank-span">Rank {{ editingSkill.rank || 1 }}</span>
+                <button
+                  class="rank-btn"
+                  @click="incrementRank(editingSkill)"
+                  :disabled="editingSkill.rank >= editingSkill.maxPoints"
+                >
+                  →
+                </button>
+              </div> -->
             </div>
+
             <div class="edit-field">
               <label>Description</label>
               <textarea
@@ -2480,6 +2540,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     placeholder="Color"
                     :style="{color: resource.color}"
                   />
+                  <!-- <div class="drag-handle">⋮⋮</div> -->
                   <button @click="editingSkill.resources.splice(index, 1)">×</button>
                 </div>
               </div>
@@ -2671,6 +2732,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
             initialPositions: null,
             prerequisiteMode: "all",
             showGenerateControls: true,
+            lastPanTime: 0,
+            treeEl: null,
           };
         },
 
@@ -2703,10 +2766,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
             if (!this.showGlobalGrid) return [];
 
             const lines = [];
-            const treeEl = document.querySelector(".talent-tree");
-            if (!treeEl) return lines;
 
-            const bounds = treeEl.getBoundingClientRect();
+            if (!this.treeEl) return lines;
+
+            const bounds = this.treeEl.getBoundingClientRect();
             const extendedBounds = {
               width: bounds.width * 10,
               height: bounds.height * 10,
@@ -2787,6 +2850,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
           }
 
           window.addEventListener("resize", this.handleResize);
+
+          this.treeEl = document.querySelector(".talent-tree");
         },
         beforeUnmount() {
           // Clean up event listener
@@ -2836,6 +2901,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 document.activeElement.tagName === "TEXTAREA";
 
               if (!isTextInputFocused && this.editingSkill === null) {
+                this.saveToHistory();
                 // // Delete each selected skill using existing deleteSkill method
                 this.selectedSkills.forEach((skill) => {
                   this.deleteSkill(skill);
@@ -3248,10 +3314,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
             const length = Math.sqrt(dx * dx + dy * dy);
 
             return {
-              left: fromSkill.x + 30 + "px",
-              top: fromSkill.y + 30 + "px",
-              width: length + "px",
-              height: this.config.connection.height + "px", // Use configurable height
+              left: `${fromSkill.x + 30}px`,
+              top: `${fromSkill.y + 30}px`,
+              width: `${length}px`,
+              height: `${this.config.connection.height}px`,
               transform: `rotate(${angle}deg)`,
             };
           },
@@ -3557,19 +3623,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
           handlePan(event) {
             if (this.isPanning) {
-              const newX = event.clientX - this.panStart.x;
-              const newY = event.clientY - this.panStart.y;
-              this.treePosition = { x: newX, y: newY };
-
-              // Update all skill positions
-              this.skills.forEach((skill) => {
-                skill.x += event.movementX;
-                skill.y += event.movementY;
+              requestAnimationFrame(() => {
+                // Update all skill positions
+                this.skills.forEach((skill) => {
+                  skill.x += event.movementX;
+                  skill.y += event.movementY;
+                  //         const skillElement = document.querySelector(`[data-skill-id="${skill.id}"]`);
+                  // if (skillElement) {
+                  //   skillElement.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
+                  // }
+                });
+                const newX = event.clientX - this.panStart.x;
+                const newY = event.clientY - this.panStart.y;
+                this.treePosition = { x: newX, y: newY };
               });
 
               // Force grid recomputation by triggering reactivity
               if (this.showGlobalGrid) {
-                this.$forceUpdate();
+                // this.$forceUpdate();
               }
             }
           },
@@ -3642,9 +3713,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
             };
 
             // Force Vue to recompute the grid lines
-            this.$nextTick(() => {
-              this.$forceUpdate();
-            });
+            // this.$nextTick(() => {
+            // this.$forceUpdate();
+            // });
             // }
 
             this.scale = newScale;
@@ -3773,7 +3844,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     }
                   } else {
                     // Single tap - toggle actions and increment points
-                    if (skill.currentPoints < skill.maxPoints) {
+                    if (skill.currentPoints < skill.maxPoints && this.canAddPoint(skill)) {
                       skill.currentPoints++;
                     }
 
@@ -4110,7 +4181,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             // Force grid recomputation
             if (this.showGlobalGrid) {
-              this.$forceUpdate();
+              // this.$forceUpdate();
             }
 
             this.touchStartX = touch.clientX;
@@ -4862,7 +4933,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             const snappedCenterX =
               Math.round(centerX / (this.gridSize / 2)) * (this.gridSize / 2) - 30;
             const snappedCenterY =
-              Math.round(centerY / (this.gridSize / 2)) * (this.gridSize / 2) - 30;
+              Math.round(centerY / (this.gridSize / 2)) * (this.gridSize / 2) - 30; // +30 works exactly on desktop, but doesn't matach grid on mobile. - 30 works for grid both desktop and mobule, just jumps up on desktop
 
             // console.log("centerX", centerX);
             // console.log("centerY", centerY);
@@ -4882,46 +4953,46 @@ input[type="range"]::-webkit-slider-thumb:hover {
             });
 
             // Get top-left most node position
-            const topLeftNode = this.skills.reduce(
-              (topLeft, skill) => {
-                if (skill.x < topLeft.x || (skill.x === topLeft.x && skill.y < topLeft.y)) {
-                  return { x: skill.x, y: skill.y };
-                }
-                return topLeft;
-              },
-              { x: Infinity, y: Infinity }
-            );
+            //           const topLeftNode = this.skills.reduce(
+            //             (topLeft, skill) => {
+            //               if (skill.x < topLeft.x || (skill.x === topLeft.x && skill.y < topLeft.y)) {
+            //                 return { x: skill.x, y: skill.y };
+            //               }
+            //               return topLeft;
+            //             },
+            //             { x: Infinity, y: Infinity }
+            //           );
 
-            let adjustedTopLeft = this.getAdjustedCoordinates(
-              topLeftNode.x,
-              topLeftNode.y,
-              this.scale
-            );
-            adjustedTopLeft = { x: this.skills[0].x, y: this.skills[0].y };
-            adjustedTopLeft.x = topLeftNode.x / 2 - this.gridSize / 2;
-            adjustedTopLeft.y = topLeftNode.y / 2 - this.gridSize / 2;
+            //           let adjustedTopLeft = this.getAdjustedCoordinates(
+            //             topLeftNode.x,
+            //             topLeftNode.y,
+            //             this.scale
+            //           );
+            //           adjustedTopLeft = { x: this.skills[0].x, y: this.skills[0].y };
+            //           adjustedTopLeft.x = topLeftNode.x / 2 - this.gridSize / 2;
+            //           adjustedTopLeft.y = topLeftNode.y / 2 - this.gridSize / 2;
 
-            if (document.querySelector(".debug-dot") === null) {
-              const dot = document.createElement("div");
-              dot.className = "debug-dot";
-              dot.style.cssText = `
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background-color: red;
-    border-radius: 50%;
-    z-index: 9999;
-    pointer-events: none;
-    left: ${adjustedTopLeft.x}px;
-    top: ${adjustedTopLeft.y}px;
-    
-  `;
-              console.log("dot", dot);
-              document.querySelector(".talent-tree").appendChild(dot);
-            } else {
-              document.querySelector(".debug-dot").style.top = `${adjustedTopLeft.y}px`;
-              document.querySelector(".debug-dot").style.left = `${adjustedTopLeft.x}px`;
-            }
+            //           if (document.querySelector(".debug-dot") === null) {
+            //             const dot = document.createElement("div");
+            //             dot.className = "debug-dot";
+            //             dot.style.cssText = `
+            //   position: absolute;
+            //   width: 10px;
+            //   height: 10px;
+            //   background-color: red;
+            //   border-radius: 50%;
+            //   z-index: 9999;
+            //   pointer-events: none;
+            //   left: ${adjustedTopLeft.x}px;
+            //   top: ${adjustedTopLeft.y}px;
+
+            // `;
+            //             console.log("dot", dot);
+            //             document.querySelector(".talent-tree").appendChild(dot);
+            //           } else {
+            //             document.querySelector(".debug-dot").style.top = `${adjustedTopLeft.y}px`;
+            //             document.querySelector(".debug-dot").style.left = `${adjustedTopLeft.x}px`;
+            //           }
 
             // Reset zoom and position
             this.scale = 1;
@@ -5297,9 +5368,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
               };
 
               // Force Vue to recompute the grid lines
-              this.$nextTick(() => {
-                this.$forceUpdate();
-              });
+              // this.$nextTick(() => {
+              // this.$forceUpdate();
+              // });
             }
           },
           toggleGenerateControls() {
@@ -5316,6 +5387,37 @@ input[type="range"]::-webkit-slider-thumb:hover {
               skill.showActions = true;
               this.selectedSkills.push(skill);
             });
+          },
+          incrementRank(editingSkill) {
+            if (!this.editingSkill.rank) {
+              this.editingSkill.rank = 1;
+            }
+            if (this.editingSkill.rank < editingSkill.maxPoints) {
+              this.editingSkill.rank++;
+            }
+          },
+
+          decrementRank() {
+            if (this.editingSkill.rank > 1) {
+              this.editingSkill.rank--;
+            }
+          },
+          calculateRankValue(value, rank) {
+            // Extract the number and check for percentage
+            const hasPercent = value.includes("%");
+            const numberMatch = value.match(/\d+(\.\d+)?/);
+
+            if (!numberMatch) return value;
+
+            const baseNumber = parseFloat(numberMatch[0]);
+            const multipliedValue = baseNumber * rank;
+
+            // Format the result
+            const formattedValue = Number.isInteger(multipliedValue)
+              ? multipliedValue.toString()
+              : multipliedValue.toFixed(1);
+
+            return hasPercent ? formattedValue + "%" : formattedValue;
           },
         },
       }).mount("#app");
