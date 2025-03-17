@@ -862,6 +862,33 @@
         animation: slideDown 0.5s ease 1s both;
       }
 
+      .generate-controls.hidden {
+        opacity: 0 !important;
+        pointer-events: none;
+      }
+
+      .generate-controls .close-btn-generate {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: none;
+        border: none;
+        color: #ffd100;
+        cursor: pointer;
+        font-size: 18px;
+        padding: 5px;
+        /* z-index: 2; */
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        color: white;
+        background: rgba(26, 26, 26, 0.95);
+        padding: 8px;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+
       @keyframes slideDown {
         from {
           opacity: 0;
@@ -1922,7 +1949,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
   <body>
     <div id="app">
-      <div class="generate-controls">
+      <div class="generate-controls" :class="{ hidden: !showGenerateControls }">
+        <button class="close-btn-generate" @click="toggleGenerateControls">❌</button>
         <input
           type="text"
           v-model="inputText"
@@ -2377,7 +2405,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 </label>
                 <div class="upload-info">
                   Supports PNG, JPG, GIF <br />
-                  (Saved in your browser)
+                  (Saved in your browser.)<br />
+                  (Make images as small as possible for best performance.) <br />
+                  (Each image will increase save file size.)
                 </div>
               </div>
               <!-- Update the existing image grid -->
@@ -2640,6 +2670,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             recentBackgrounds: JSON.parse(localStorage.getItem("recentBackgrounds") || "[]"),
             initialPositions: null,
             prerequisiteMode: "all",
+            showGenerateControls: true,
           };
         },
 
@@ -2781,17 +2812,36 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 this.copy();
               } else if (event.key === "v") {
                 this.paste();
+              } else if (event.key.toLowerCase() === "g") {
+                event.preventDefault();
+                this.toggleGenerateControls();
+              } else if (event.key.toLowerCase() === "a") {
+                // if (!this.editingSkill) {
+                const isTextInputFocused =
+                  document.activeElement.tagName === "INPUT" ||
+                  document.activeElement.tagName === "TEXTAREA";
+
+                if (!isTextInputFocused) {
+                  event.preventDefault();
+                  this.selectAllSkills();
+                }
               }
             } else if (event.key === "Delete") {
               // Get all selected skills
               // const selectedSkills = this.skills.filter((skill) =>
               //   this.selectedSkills.includes(skill.id)
               // );
-              // // Delete each selected skill using existing deleteSkill method
-              // selectedSkills.forEach((skill) => {
-              //   this.deleteSkill(skill);
-              // });
-              // // Clear selection
+              const isTextInputFocused =
+                document.activeElement.tagName === "INPUT" ||
+                document.activeElement.tagName === "TEXTAREA";
+
+              if (!isTextInputFocused && this.editingSkill === null) {
+                // // Delete each selected skill using existing deleteSkill method
+                this.selectedSkills.forEach((skill) => {
+                  this.deleteSkill(skill);
+                });
+              }
+              // Clear selection
               // this.deselectAllSkills();
               // // Save state to history
               // this.saveToHistory();
@@ -4431,7 +4481,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 modal.innerHTML = `
                                               <button class="close-btn">✕</button>
                                               <h3>Share Your Skill Tree</h3>
-                                              <div class="share-link">${shareableUrl}</div>
+                                              <div class="share-link"><a href="${shareableUrl}" target="_blank"> ${shareableUrl}</a></div>
                                               <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
                                                   Copy Link
                                               </button>
@@ -4796,9 +4846,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
               }
             );
 
-            // Calculate tree dimensions
+            // Calculate tree dimensions using snapped bounds
             const treeWidth = bounds.maxX - bounds.minX;
             const treeHeight = bounds.maxY - bounds.minY;
+            console.log("treeWidth", treeWidth);
 
             // Calculate viewport dimensions accounting for zoom container
             const viewportWidth = window.innerWidth * 2; // Account for zoom-tree width being 200%
@@ -4807,22 +4858,70 @@ input[type="range"]::-webkit-slider-thumb:hover {
             // Calculate center position
             const centerX = (viewportWidth - treeWidth) / 2;
             const centerY = (viewportHeight - treeHeight) / 2;
+            // Snap center position to grid
+            const snappedCenterX =
+              Math.round(centerX / (this.gridSize / 2)) * (this.gridSize / 2) - 30;
+            const snappedCenterY =
+              Math.round(centerY / (this.gridSize / 2)) * (this.gridSize / 2) - 30;
 
-            console.log("centerX", centerX);
-            console.log("centerY", centerY);
+            // console.log("centerX", centerX);
+            // console.log("centerY", centerY);
 
-            console.log("bounds.minX", bounds.minX);
-            console.log("bounds.minY", bounds.minY);
+            // console.log("bounds.minX", bounds.minX);
+            // console.log("bounds.minY", bounds.minY);
+            // Get adjusted coordinates for the viewport center
 
             // Calculate required offset to center the tree
-            const offsetX = centerX - bounds.minX;
-            const offsetY = centerY - bounds.minY;
+            const offsetX = snappedCenterX - bounds.minX;
+            const offsetY = snappedCenterY - bounds.minY;
 
             // Adjust all skill positions
             this.skills.forEach((skill) => {
               skill.x += offsetX;
               skill.y += offsetY;
             });
+
+            // Get top-left most node position
+            const topLeftNode = this.skills.reduce(
+              (topLeft, skill) => {
+                if (skill.x < topLeft.x || (skill.x === topLeft.x && skill.y < topLeft.y)) {
+                  return { x: skill.x, y: skill.y };
+                }
+                return topLeft;
+              },
+              { x: Infinity, y: Infinity }
+            );
+
+            let adjustedTopLeft = this.getAdjustedCoordinates(
+              topLeftNode.x,
+              topLeftNode.y,
+              this.scale
+            );
+            adjustedTopLeft = { x: this.skills[0].x, y: this.skills[0].y };
+            adjustedTopLeft.x = topLeftNode.x / 2 - this.gridSize / 2;
+            adjustedTopLeft.y = topLeftNode.y / 2 - this.gridSize / 2;
+
+            if (document.querySelector(".debug-dot") === null) {
+              const dot = document.createElement("div");
+              dot.className = "debug-dot";
+              dot.style.cssText = `
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+    z-index: 9999;
+    pointer-events: none;
+    left: ${adjustedTopLeft.x}px;
+    top: ${adjustedTopLeft.y}px;
+    
+  `;
+              console.log("dot", dot);
+              document.querySelector(".talent-tree").appendChild(dot);
+            } else {
+              document.querySelector(".debug-dot").style.top = `${adjustedTopLeft.y}px`;
+              document.querySelector(".debug-dot").style.left = `${adjustedTopLeft.x}px`;
+            }
 
             // Reset zoom and position
             this.scale = 1;
@@ -5109,7 +5208,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.selectedSkills = [];
             this.skills.forEach((s) => {
               s.showActions = false;
+              s.showTooltip = false;
             });
+            //hide skill description preview
           },
           copy() {
             // It seems like this.selectedSkills cannot be accessed here.
@@ -5163,7 +5264,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             this.putTreeInViewport();
 
             // Force recomputation of grid lines
-            this.gridSize = window.innerWidth <= 768 ? 80 : 120;
+            // this.gridSize = window.innerWidth <= 768 ? 80 : 120;
 
             const zoomTree = document.querySelector(".zoom-tree");
             if (zoomTree) {
@@ -5200,6 +5301,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 this.$forceUpdate();
               });
             }
+          },
+          toggleGenerateControls() {
+            this.showGenerateControls = !this.showGenerateControls;
+          },
+          selectAllSkills() {
+            if (this.isViewMode()) return;
+
+            // Clear existing selection
+            this.deselectAllSkills();
+
+            // Select all skills
+            this.skills.forEach((skill) => {
+              skill.showActions = true;
+              this.selectedSkills.push(skill);
+            });
           },
         },
       }).mount("#app");
