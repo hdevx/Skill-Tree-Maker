@@ -2061,7 +2061,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
               :key="connection.id"
               class="connection"
               :class="{ active: isConnectionActive(connection), 'connection-hover': connection.isHovered }"
-              :style="getConnectionStyle(connection)"
+              :style="connectionStyleGetter(connection)"
               @mouseenter="!isPanning && (connection.isHovered = true)"
               @mouseleave="!isPanning && (connection.isHovered = false)"
               @click.stop="removeConnection(connection)"
@@ -2178,7 +2178,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
       </div>
 
       <div
-        v-if="showLoadModal"
+        v-show="showLoadModal"
         class="load-modal-backdrop"
         :class="{ active: showLoadModal }"
         @click="showLoadModal = false"
@@ -2215,7 +2215,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
         >
           <img src="/img/discord-logo.png" alt="" style="width: 17px; height: 17px" />
         </button>
-        <div class="options-panel" v-if="showOptions">
+        <div class="options-panel" v-show="showOptions">
           <div class="options-section">
             <h3>Class Settings</h3>
             <div class="option-group">
@@ -2768,7 +2768,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             const lines = [];
 
             if (!this.treeEl) return lines;
-
+            // console.log("treeEl", this.treeEl);
             const bounds = this.treeEl.getBoundingClientRect();
             const extendedBounds = {
               width: bounds.width * 10,
@@ -2810,6 +2810,27 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
           totalPointsSpent() {
             return this.skills.reduce((total, skill) => total + skill.currentPoints, 0);
+          },
+          connectionStyleGetter() {
+            return (connection) => {
+              const fromSkill = this.skills.find((s) => s.id === connection.from);
+              const toSkill = this.skills.find((s) => s.id === connection.to);
+
+              if (!fromSkill || !toSkill) return {};
+
+              const dx = toSkill.x - fromSkill.x;
+              const dy = toSkill.y - fromSkill.y;
+              const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+              const length = Math.sqrt(dx * dx + dy * dy);
+
+              return {
+                left: `${fromSkill.x + 30}px`,
+                top: `${fromSkill.y + 30}px`,
+                width: `${length}px`,
+                height: `${this.config.connection.height}px`,
+                transform: `rotate(${angle}deg)`,
+              };
+            };
           },
         },
         mounted() {
@@ -4167,17 +4188,19 @@ input[type="range"]::-webkit-slider-thumb:hover {
             const deltaX = touch.clientX - this.touchStartX;
             const deltaY = touch.clientY - this.touchStartY;
 
-            // Update all skill positions
-            this.skills.forEach((skill) => {
-              skill.x += deltaX;
-              skill.y += deltaY;
-            });
+            requestAnimationFrame(() => {
+              // Update all skill positions
+              this.skills.forEach((skill) => {
+                skill.x += deltaX;
+                skill.y += deltaY;
+              });
 
-            // Update tree position for grid
-            this.treePosition = {
-              x: this.treePosition.x + deltaX,
-              y: this.treePosition.y + deltaY,
-            };
+              // Update tree position for grid
+              this.treePosition = {
+                x: this.treePosition.x + deltaX,
+                y: this.treePosition.y + deltaY,
+              };
+            });
 
             // Force grid recomputation
             if (this.showGlobalGrid) {
@@ -4505,7 +4528,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 }
 
                 if (data.prerequisiteMode !== undefined) {
+                  console.log("loading settings from save file");
                   this.prerequisiteMode = data.prerequisiteMode;
+                  this.overlayColor = data.overlayColor;
+                  this.overlayOpacity = data.overlayOpacity;
+                  this.skillShape = data.skillShape;
+                  this.maxPoints = data.maxPoints;
+                  this.config.connection.height = data.connectionWidth;
+                  this.showArrows = data.showArrows;
+                  this.currentClassDescription = data.currentClassDescription;
+                  this.updateBackground();
+                  this.updateSkillShape();
                 } else {
                   // when scaling fix, all origin got moved to the top left a full screen
                   //tree position doesnt work need tomove skills
@@ -4532,6 +4565,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
               currentName: this.currentName,
               currentBackgroundLink: this.currentBackgroundLink,
               skillIdCounter: this.skillIdCounter,
+              overlayColor: this.overlayColor,
+              overlayOpacity: this.overlayOpacity,
+              skillShape: this.skillShape,
+              maxPoints: this.maxPoints,
+              prerequisiteMode: this.prerequisiteMode,
+              connectionWidth: this.config.connection.height,
+              showArrows: this.showArrows,
+              currentClassDescription: this.currentClassDescription,
               timestamp: new Date().toISOString(),
               id: crypto.randomUUID(),
             };
@@ -5014,7 +5055,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 // console.log("loading for key", key);
                 this[key] = this.loadedData.FullData[key];
               });
-              console.log("prerequisiteMode", this.loadedData.FullData.prerequisiteMode);
+              // console.log("prerequisiteMode", this.loadedData.FullData.prerequisiteMode);
               if (this.loadedData.FullData.prerequisiteMode !== undefined) {
               } else {
                 this.skills.forEach((skill) => {
@@ -5022,6 +5063,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   skill.y += window.innerHeight / 2;
                 });
               }
+              this.treeEl = document.querySelector(".talent-tree");
+
               // console.log("not adjusting visiblity");
               this.putTreeInViewport();
               // Find bounding box of all skills
