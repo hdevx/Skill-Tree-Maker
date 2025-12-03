@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Skill Tree Maker | Drag and Drop Online Editor</title>
+    <title>Skill Tree Maker - Drag and Drop Online Editor</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
@@ -16,6 +16,8 @@
     <meta name="robots" content="index, follow" />
     <meta name="author" content="RPG Skill Tree Generator" />
 
+    <meta property="og:site_name" content="Skill Tree Maker" />
+
     <!-- Favicon -->
     <link rel="shortcut icon" type="image/x-icon" href="/icons/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
@@ -25,26 +27,83 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Skill Tree Designer | Drag and Drop Online Editor",
-        "image": "https://www.rpgskilltreegenerator.com/icons/android-chrome-512x512.png",
+        "@type": "WebApplication",
+        "name": "Skill Tree Maker - Drag and Drop Online Editor",
+        "image": {
+          "@type": "ImageObject",
+          "url": "https://www.rpgskilltreegenerator.com/img/examples/rpg skill tree maker open source easy.png",
+          "width": 1200,
+          "height": 630,
+          "caption": "Skill Tree Maker - Create a custom skill tree for your RPG character or game"
+        },
         "url": "https://www.rpgskilltreegenerator.com/",
-        "description": "Instantly customize your own skill trees, talent trees, and ability trees with this free online skill tree maker. Type a class idea, like Holy Necromancer or Garlic Knight, and get an RPG skill tree with JSON export."
+        "description": "Instantly customize your own skill trees, talent trees, and ability trees with this free online skill tree maker. Type a class idea, like Holy Necromancer or Garlic Knight, and get an RPG skill tree with JSON export.",
+        "applicationCategory": "Game Design Tool",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "screenshot": [
+          {
+            "@type": "ImageObject",
+            "url": "https://www.rpgskilltreegenerator.com/img/examples/holy necromancer skill tree.png",
+            "caption": "Holy Necromancer Skill Tree Example"
+          },
+          {
+            "@type": "ImageObject",
+            "url": "https://www.rpgskilltreegenerator.com/img/examples/sock wizard skill tree.png",
+            "caption": "Sock Wizard Skill Tree Example"
+          }
+        ],
+        "potentialAction": {
+          "@type": "CreateAction",
+          "target": "https://www.rpgskilltreegenerator.com/",
+          "description": "Create a custom skill tree for your RPG character or game",
+          "name": "Create Skill Tree"
+        }
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "RPG Skill Tree Maker",
+        "alternateName": ["Skill Tree Maker"],
+        "url": "https://www.rpgskilltreegenerator.com/"
       }
     </script>
 
     <!-- Open Graph Meta Tags (for social media) -->
-    <meta property="og:title" content="RPG Skill Tree Designer" />
+    <meta property="og:title" content="RPG Skill Tree Maker" />
+    <meta name="twitter:title" content="RPG Skill Tree Maker" />
     <meta
       property="og:description"
-      content="Talent, Class, and Ability Tree Generator and Editor."
+      content="Skill Tree Maker - Talent, Class, and Ability Tree Generator and Editor."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.rpgskilltreegenerator.com/" />
     <meta
       property="og:image"
-      content="https://www.rpgskilltreegenerator.com/icons/android-chrome-512x512.png"
+      content="https://www.rpgskilltreegenerator.com/img/examples/rpg skill tree maker open source easy.png"
     />
+
+    <meta
+      property="og:image"
+      content="https://www.rpgskilltreegenerator.com/img/examples/holy necromancer skill tree.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Holy Necromancer Skill Tree Example" />
+
+    <meta
+      property="og:image"
+      content="https://www.rpgskilltreegenerator.com/img/examples/sock wizard skill tree.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Sock Wizard Skill Tree Example" />
 
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -55,8 +114,29 @@
     />
     <meta
       name="twitter:image"
-      content="https://www.rpgskilltreegenerator.com/icons/android-chrome-512x512.png"
+      content="https://www.rpgskilltreegenerator.com/img/examples/rpg skill tree maker open source easy.png"
     />
+
+    <style>
+      #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        opacity: 1;
+        z-index: 9999;
+        filter: blur(5px);
+        transition: opacity 1.5s ease, filter 1.5s ease;
+      }
+
+      #overlay.fade-out {
+        opacity: 0;
+        filter: blur(0px);
+        pointer-events: none;
+      }
+    </style>
 
     <script src="/lib/vue.global.js"></script>
     <!-- <script src="/lib/vue.global.prod.min.js"></script> -->
@@ -119,9 +199,14 @@
         perspective: 1000; /* Create stacking context for better performance */
       }
 
+      :root {
+        --tree-unlock-color: #ffd700;
+      }
+
       .skill:hover img {
         filter: brightness(1.7);
-        box-shadow: 0 0 15px rgb(189, 122, 0);
+        /* box-shadow: 0 0 15px rgb(189, 122, 0); */
+        box-shadow: 0 0 15px var(--tree-unlock-color);
       }
 
       /* Add touch device styles */
@@ -237,12 +322,14 @@
         /* More subtle connection line */
         box-shadow: 0 0 5px rgba(74, 74, 74, 0.5);
         transition: background 0.25s ease;
+        will-change: transform;
       }
 
       .connection-after {
         content: "";
         position: absolute;
-        right: 31px;
+        /* right: 31px; */
+        right: 2px;
         /* This makes arrow slide up and down */
         top: 50%;
         transform: translateY(-50%);
@@ -255,10 +342,12 @@
         border-bottom: 5px solid transparent;
         /* Increased to 10px for proportional width */
         transition: border-left-color 0.25s ease;
+        will-change: transform;
       }
 
       .connection.active .connection-after {
-        border-left-color: #ffd700;
+        border-left-color: var(--tree-unlock-color);
+        /* #ffd700; */
       }
 
       .connection.connection-hover .connection-after {
@@ -279,10 +368,44 @@
       }
 
       .connection.active {
-        background: #ffd700;
+        background: var(--tree-unlock-color);
+        /* #ffd700; */
         /* Golden/yellow color for active connections */
-        box-shadow: 0 0 5px rgba(255, 215, 0, 0.9);
+        box-shadow: 0 0 5px rgba(var(--tree-unlock-color), 0.9);
+        /* rgba(255, 215, 0, 0.9); */
       }
+
+      .connection.dotted {
+        background: repeating-linear-gradient(
+          to right,
+          #4a4a4a 0,
+          #4a4a4a 8px,
+          transparent 8px,
+          transparent 16px
+        );
+      }
+
+      .connection.dotted.active {
+        background: repeating-linear-gradient(
+          to right,
+          #ffd700 0,
+          #ffd700 8px,
+          transparent 8px,
+          transparent 16px
+        );
+      }
+
+      .connection.dotted.connection-hover {
+        background: repeating-linear-gradient(
+          to right,
+          #ff4747 0,
+          #ff4747 8px,
+          transparent 8px,
+          transparent 16px
+        );
+      }
+
+      /* Connection Menu */
 
       .skill-tooltip {
         position: absolute;
@@ -292,13 +415,21 @@
         border-radius: 4px;
         font-size: 14px;
         width: 320px;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 1000;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         font-family: Verdana, sans-serif;
         border: 1px solid #4a4a4a;
         transform: translateZ(0);
         will-change: transform;
+        cursor: text;
+      }
+      .skill-tooltip,
+      .skill-tooltip * {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
       }
 
       .skill-tooltip.tooltip-left {
@@ -313,6 +444,23 @@
         transform: translateY(-50%);
       }
 
+      .skill-tooltip .skill-requirements {
+        color: #ff4747 !important;
+        /* margin: 5px 0 10px 0; */
+        /* padding: 8px; */
+        /* background: rgba(139, 69, 19, 0.3); */
+        /* border: 1px solid #8B4513; */
+        /* border-radius: 3px; */
+      }
+
+      .skill-tooltip .requirement-item {
+        color: #ff6b6b !important;
+        font-size: 12px;
+        font-weight: normal;
+        margin: 2px 0;
+        line-height: 1.3;
+      }
+
       /* Add this media query for mobile devices */
       @media (max-width: 768px) {
         .skill-tooltip {
@@ -320,6 +468,12 @@
           font-size: 12px;
           top: calc(50% + 43px) !important;
         }
+
+        /* .skill-tooltip .damage {
+        color: #ff4747;
+        font-weight: normal;
+        margin-top: 8px;
+      } */
 
         /* Add mobile styles for skills */
         .skill {
@@ -565,8 +719,10 @@
       }
 
       .skill.skilled {
-        border: 2px solid #ffd700;
-        box-shadow: 0 0 10px rgba(255, 215, 0, 0.9);
+        border: 2px solid var(--tree-unlock-color);
+        /* #ffd700; */
+        box-shadow: 0 0 10px rgba(var(--tree-unlock-color), 0.9);
+        /* rgba(255, 215, 0, 0.9); */
       }
 
       .btn {
@@ -620,13 +776,22 @@
         border-radius: 8px;
         padding: 20px;
         width: 90%;
-        max-width: 600px;
+        /* max-width: 679px; */
         /* Increased from 500px to accommodate preview */
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
         color: #ffd100;
         font-family: Verdana, sans-serif;
         margin-left: 7%;
         margin-right: 7%;
+      }
+
+      .edit-modal::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: red;
       }
 
       /* Add new styles for the preview section */
@@ -642,7 +807,8 @@
       .skill-preview {
         width: 60px;
         height: 60px;
-        background: #2a2a2a;
+        /* background: #2a2a2a; */
+        background-color: rgb(21, 21, 21);
         border: 2px solid #292929;
         border-radius: 50%;
         display: flex;
@@ -651,7 +817,7 @@
         position: relative;
         top: 44px;
         position: relative;
-        /* Add this */
+        margin-left: 5px;
       }
 
       .skill-preview::after {
@@ -1107,7 +1273,7 @@
         width: 80%;
         margin-left: 7%;
         margin-right: 7%;
-        max-width: 600px;
+        max-width: 679px;
         max-height: 80vh;
         overflow-y: auto;
         z-index: 11000;
@@ -1204,7 +1370,12 @@
 
         .edit-field label {
           font-size: 12px;
-          /* Smaller labels */
+        }
+        .option-edit-label {
+          font-size: 12px !important;
+        }
+        .option-group-select {
+          font-size: 9px !important;
         }
 
         .edit-field input,
@@ -1490,6 +1661,7 @@
         font-size: 20px;
         transition: opacity 0.2s ease;
         margin-left: 0px;
+        margin-top: 1px;
       }
 
       .discord-button img {
@@ -1517,8 +1689,9 @@
         font-size: 20px;
         transition: opacity 0.2s ease;
         position: absolute;
-        top: -39px;
-        left: 200px;
+        top: -37px;
+        left: 300px;
+        /* left: 200px; */
       }
 
       .load-button:hover {
@@ -1532,11 +1705,11 @@
       }
 
       /* @media (max-width: 768px) {
-            .bottom-left-buttons {
-                display: flex;
-                gap: 10px;
-            }
-        } */
+                  .bottom-left-buttons {
+                      display: flex;
+                      gap: 10px;
+                  }
+              } */
 
       #resources-container {
         max-height: 150px;
@@ -1614,10 +1787,10 @@
 
       .grid-overlay {
         /* position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0; */
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0; */
         width: 100%;
         height: 100%;
         pointer-events: none;
@@ -1627,6 +1800,7 @@
       .grid-line {
         position: absolute;
         background-color: rgba(255, 255, 255, var(--grid-opacity));
+        will-change: transform;
       }
 
       .grid-line.horizontal {
@@ -1701,20 +1875,20 @@
         /* border-radius: 2px; */
       }
 
-      /* 
-input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #ffd100;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
+      /*
+      input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 12px;
+          height: 12px;
+          background: #ffd100;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: transform 0.2s;
+      }
 
-input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-} */
+      input[type="range"]::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
+      } */
 
       .options-panel {
         position: fixed;
@@ -1952,6 +2126,265 @@ input[type="range"]::-webkit-slider-thumb:hover {
       .rank-btn:hover:not(:disabled) {
         background: rgba(90, 90, 90, 0.8);
       }
+
+      .info-panel {
+        font-size: 12px;
+        position: fixed;
+        bottom: 245px;
+        right: 25px;
+        background: rgba(0, 0, 0, 0.65);
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #4a4a4a;
+        color: white;
+        z-index: 1000;
+      }
+
+      .info-btn {
+        position: fixed;
+        bottom: 17px;
+        left: 270px;
+        width: 40px;
+        height: 40px;
+        background: rgba(26, 26, 26, 0.95);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        z-index: 1000;
+        cursor: pointer;
+      }
+      .twitter-btn {
+        position: fixed;
+        bottom: 17px;
+        left: 220px;
+        width: 40px;
+        height: 40px;
+        background: rgba(26, 26, 26, 0.95);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        z-index: 1000;
+        cursor: pointer;
+      }
+      .twitter-btn .inner-button {
+        width: 100%;
+        height: 100%;
+        background-image: url("https://static.vecteezy.com/system/resources/previews/027/127/500/non_2x/patreon-logo-patreon-icon-transparent-free-png.png");
+        background-size: cover;
+        background-position: center;
+      }
+      @media (max-width: 768px) {
+        .twitter-btn {
+          bottom: 20px;
+          left: 120px;
+        }
+        .info-btn {
+          bottom: 20px;
+          left: 168px;
+        }
+      }
+      .stats-panel {
+        font-size: 12px;
+        position: fixed;
+        bottom: 128px;
+        right: 25px;
+        background: rgba(0, 0, 0, 0.65);
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        padding: 20px;
+        border-radius: 4px;
+        border: 1px solid #4a4a4a;
+        color: white;
+        z-index: 1000;
+        width: 137px;
+      }
+
+      .stats-panel h3 {
+        /* color: #ffd100; */
+        margin: 0 0 15px 0;
+        font-size: 16px;
+        border-bottom: 1px solid #4a4a4a;
+        padding-bottom: 8px;
+      }
+
+      .upload-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+      }
+
+      .url-input {
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid #4a4a4a;
+        color: #ffffff;
+        font-family: Verdana, sans-serif;
+        font-size: 14px;
+        border-radius: 4px;
+        width: calc(100% - 24px);
+        padding: 8px 12px;
+        transition: border-color 0.2s ease;
+      }
+
+      .url-input:focus {
+        outline: none;
+        border-color: #ffd100;
+      }
+
+      @media (min-width: 768px) {
+        .url-upload {
+          /* display: flex; */
+          /* align-items: center; */
+          height: 131px;
+
+          /* gap: 5px; */
+        }
+        .image-upload-column {
+          height: 131px;
+        }
+        .url-input {
+          margin-top: 9px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        #imageUpload2,
+        #urlUpload {
+          font-size: 12px;
+        }
+      }
+      .image-selector-modal h2 {
+        color: #ffffff;
+        text-align: center;
+        margin: 0 0 20px 0;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #4a4a4a;
+        font-size: 18px;
+      }
+      @media (max-width: 768px) {
+        .edit-modal h2 {
+          font-size: 16px;
+          /* Smaller title on mobile */
+          margin: 0 0 15px 0;
+        }
+      }
+
+      .image-selector-modal {
+        /* display: flex;
+        gap: 20px;
+        background: rgba(16, 16, 16, 0.95);
+        border: 1px solid #4a4a4a;
+        border-radius: 8px;
+        padding: 20px;
+        width: 90%;
+        max-width: 679px; */
+        /* Increased from 500px to accommodate preview */
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+        color: #ffd100;
+        font-family: Verdana, sans-serif;
+        margin-left: 7%;
+        margin-right: 7%;
+      }
+      .remove-image-btn {
+        transition: transform 0.15s cubic-bezier(0.4, 1.3, 0.6, 1);
+      }
+      .remove-image-btn:hover {
+        transform: scale(1.5);
+        z-index: 10;
+      }
+      .skill-name {
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: #ffd100;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        pointer-events: none;
+        font-family: "Rocher", serif;
+      }
+
+      .skill-appearance-controls {
+        margin-top: 70px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        /* width: 150px; */
+        width: 96px;
+      }
+
+      @media (max-width: 768px) {
+        .skill-appearance-controls {
+          width: 75px;
+        }
+      }
+
+      .skill-appearance-controls .control-group {
+        margin-bottom: 10px;
+      }
+
+      .skill-appearance-controls .control-group label {
+        display: block;
+        margin-bottom: 5px;
+        /* color: #ccc; */
+        color: #ffd100;
+        font-size: 14px;
+      }
+      @media (max-width: 768px) {
+        .skill-appearance-controls .control-group label {
+          font-size: 12px;
+        }
+      }
+
+      .skill-appearance-controls .radio-group {
+        /* display: flex; */
+        /* gap: 15px; */
+      }
+
+      .skill-appearance-controls .radio-group label {
+        /* display: flex; */
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        display: inline-block;
+      }
+
+      .skill-appearance-controls input[type="range"] {
+        /* width: 100%; */
+        width: calc(100% - 50px);
+        /* margin: 5px 0; */
+      }
+
+      .skill-appearance-controls .radio-group span {
+        font-size: 14px;
+        position: relative;
+        top: -7px;
+        left: 6px;
+      }
+      @media (max-width: 768px) {
+        .skill-appearance-controls .radio-group span {
+          font-size: 12px;
+        }
+      }
+      .control-point {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: #4caf50;
+        border: 2px solid white;
+        border-radius: 50%;
+        cursor: move;
+        z-index: 500;
+        transform: translate(-50%, -50%);
+      }
+
+      .control-point:hover {
+        background: #66bb6a;
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+      }
     </style>
 
     <!-- Google tag (gtag.js) -->
@@ -1988,6 +2421,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   </head>
 
   <body>
+    <!-- <div id="overlay"></div> -->
     <div id="app">
       <div class="generate-controls" :class="{ hidden: !showGenerateControls }">
         <button class="close-btn-generate" @click="toggleGenerateControls">❌</button>
@@ -2060,16 +2494,29 @@ input[type="range"]::-webkit-slider-thumb:hover {
               v-for="connection in connections"
               :key="connection.id"
               class="connection"
-              :class="{ active: isConnectionActive(connection), 'connection-hover': connection.isHovered }"
+              :class="{ active: isConnectionActive(connection), 'connection-hover': connection.isHovered,  dotted: connection.dotted }"
               :style="connectionStyleGetter(connection)"
               @mouseenter="!isPanning && (connection.isHovered = true)"
               @mouseleave="!isPanning && (connection.isHovered = false)"
-              @click.stop="removeConnection(connection)"
-              @touchstart.stop.prevent="removeConnection(connection)"
+              @click.stop="editConnection(connection)"
+              @touchstart.stop.prevent="editConnection(connection)"
+              @contextmenu.prevent.stop="removeConnection(connection)"
             >
               <div class="connection-hitbox"></div>
               <div v-show="showArrows" class="connection-after"></div>
             </div>
+            <!-- Control Points on connections -->
+            <!--<div
+              v-for="connection in connections"
+              :key="'cp-' + connection.id"
+              class="control-point"
+              :style="{
+  left: connection.controlPoint.x + 'px',
+  top: connection.controlPoint.y + 'px'
+}"
+              @mousedown.stop="startDragControlPoint($event, connection)"
+              @click.stop="editConnection(connection)"
+            ></div>-->
 
             <!-- Skills -->
             <div
@@ -2086,20 +2533,43 @@ input[type="range"]::-webkit-slider-thumb:hover {
                         //'selected': selectedSkills.includes(skill.id)'
                     }"
               :style="{
-                //transform: `translate3d(${skill.x}px, ${skill.y}px, 0)`,
+                //transform: `translate3d(${skill.x - 1000}px, ${skill.y - 1000}px, 0)`,
                         left: skill.x + 'px',
                         top: skill.y + 'px',
-                        opacity: skill.shouldAnimate ? 1 : 0
+                        opacity: skill.shouldAnimate ? 1 : 0,
+                        visibility:  hideLockedSkills >= 1 && this.maxPoints != this.totalPointsSpent && !canAddPoint(skill, 'no warning') ? 'hidden' : 'visible',
+                        width: skill.size + 'px',
+                        height: skill.size + 'px',
+                        borderStyle: skill.borderType === 'dashed' ? skill.borderType : 'solid',
+                        borderRadius: skill.shape === 'round' ? '50%' : '0',
+                        backgroundColor: 'rgb(21, 21, 21)'
                     }"
               @contextmenu.prevent="decrementPoints(skill)"
               @click.stop="!$event.shiftKey && toggleActions(skill)"
               @mousedown.left="startDrag($event, skill)"
               @touchstart.stop="handleSkillTouch($event, skill)"
               @touchend.stop="handleSkillTouchEnd(skill)"
-              @mouseenter="skill.showTooltip = true"
-              @mouseleave="skill.showTooltip = false"
+              @mouseenter="skillMouseEnter(skill)"
+              @mouseleave="skillMouseLeave(skill)"
               @click.shift.stop="toggleSkillSelection(skill)"
             >
+              <!--
+            this keeps good perforamnce on selection but not on panning           
+            v-memo="[
+    skill.currentPoints,
+    skill.showTooltip,
+    skill.showActions,
+    skill.shouldAnimate,
+    skill.x,
+    skill.y,
+    skill.size,
+    hideLockedSkills,
+    showSkillNames,
+    maxPoints,
+    totalPointsSpent
+  ]"-->
+              <!--borderColor: skill.currentPoints < 1 ? 'rgb(106, 103, 103)' : 'rgb(255, 215, 0)',-->
+              <div v-if="showSkillNames" class="skill-name">{{ skill.name }}</div>
               <img
                 :src="skill.image"
                 :alt="skill.name"
@@ -2121,11 +2591,26 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 class="skill-tooltip"
                 v-show="skill.showTooltip"
                 :class="getTooltipPosition(skill)"
+                @mousedown.stop
+                @mouseup.stop
+                @click.stop
+                @touchstart.stop
+                @touchend.stop
               >
                 <h3>{{ skill.name }}</h3>
-                <p style="white-space: pre-wrap">
-                  {{ skill.description || 'No description available' }}
-                </p>
+                <div
+                  class="skill-requirements"
+                  v-if="getUnmetRequirements(skill).length > 0 && showRequirementsTooltip"
+                >
+                  <div
+                    v-for="requirement in getUnmetRequirements(skill)"
+                    :key="requirement"
+                    class="requirement-item"
+                  >
+                    {{ requirement }}
+                  </div>
+                </div>
+                <p style="white-space: pre-wrap">{{ skill.description || '' }}</p>
                 <div class="resources-container" v-if="skill.resources?.length">
                   <div class="resources-container" v-if="skill.resources?.length">
                     <div
@@ -2135,7 +2620,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
                       :style="{color: r.color}"
                     >
                       {{ r.name }}{{ r.value ? ': ' + (r.value.toLowerCase().includes('rank') ?
-                      calculateRankValue(r.value, skill.rank || 1) : r.value) : '' }}
+                      calculateRankValue(r.value, skill.rank || 1) : parseStatValue(r.value,
+                      skill.currentPoints)) : '' }}
                     </div>
                   </div>
                 </div>
@@ -2170,6 +2656,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   @mouseleave="hideActionTooltip($event)"
                 >
                   🔗
+                </button>
+                <button
+                  class="action-btn"
+                  @click.stop="splitSkill(skill)"
+                  @touchstart.stop.prevent="splitSkill(skill)"
+                  @mouseenter="showActionTooltip($event, 'Split into two mutually exclusive skills')"
+                  @mouseleave="hideActionTooltip($event)"
+                >
+                  🔀
                 </button>
               </div>
             </div>
@@ -2219,7 +2714,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
           <div class="options-section">
             <h3>Class Settings</h3>
             <div class="option-group">
-              <label for="className">Class Name</label>
+              <label
+                for="className"
+                title="This changes the text displayed at the bottom of the skill tree"
+                >Class Name</label
+              >
               <input
                 type="text"
                 id="className"
@@ -2228,7 +2727,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
               />
             </div>
             <div class="option-group">
-              <label>Max Points</label>
+              <label
+                title="This is the maximum number of points that can be spent on the skill tree"
+                >Max Points</label
+              >
               <input
                 type="number"
                 v-model="maxPoints"
@@ -2238,11 +2740,28 @@ input[type="range"]::-webkit-slider-thumb:hover {
               />
             </div>
             <div class="option-group">
-              <label>Skill Unlock</label>
+              <label title="This can be overridden in each skill's individual settings"
+                >Skill Unlock</label
+              >
               <select v-model="prerequisiteMode">
                 <option value="none">No Previous Skills Required</option>
                 <option value="one">At Least One Skill Required</option>
                 <option default value="all">All Previous Skills Required</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label> Skill Unlock Display </label>
+              <select v-model="hideLockedSkills">
+                <option value="0">Always Show All Skills</option>
+                <option value="1">Hide Skills When Requirements Not Met</option>
+                <option value="2">Hide Skills And Connections When Requirements Not Met</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label>Total Stats Panel</label>
+              <select v-model="showStatsSummary" @change="showStatValue">
+                <option :value="false">Hide</option>
+                <option :value="true">Show</option>
               </select>
             </div>
           </div>
@@ -2254,6 +2773,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
               <select v-model="mode" @change="handleModeChange">
                 <option value="edit">Edit Mode</option>
                 <option value="view">View Mode</option>
+                <option value="game">Game Mode</option>
+                <option value="frozen">Frozen Mode</option>
               </select>
             </div>
 
@@ -2333,6 +2854,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
               </div>
             </div>
             <div class="option-group">
+              <label>Tree Unlock Color</label>
+              <div class="color-controls">
+                <input type="color" v-model="treeUnlockColor" @input="updateTreeUnlockColor" />
+                <!--<input
+                  type="range"
+                  v-model="selectionOpacity"
+                  min="0"
+                  max="100"
+                  @input="updateTreeUnlockColor"
+                /> 
+                <span>{{ selectionOpacity }}%</span>-->
+              </div>
+            </div>
+            <div class="option-group">
               <label>Connection Width</label>
               <div class="range-container">
                 <input
@@ -2351,6 +2886,26 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 <input type="checkbox" v-model="showArrows" />
               </label>
             </div>
+            <!-- <div class="option-group">
+              <label>Skill Size Presets</label>
+              <div class="size-preset-controls">
+                <div class="preset-group">
+                  <label>Small</label>
+                  <input type="range" v-model="skillSizePresets.small" min="30" max="50" step="2" />
+                  <span>{{skillSizePresets.small}}px</span>
+                </div>
+                <div class="preset-group">
+                  <label>Medium</label>
+                  <input type="range" v-model="skillSizePresets.medium" min="51" max="70" step="2" />
+                  <span>{{skillSizePresets.medium}}px</span>
+                </div>
+                <div class="preset-group">
+                  <label>Large</label>
+                  <input type="range" v-model="skillSizePresets.large" min="71" max="100" step="2" />
+                  <span>{{skillSizePresets.large}}px</span>
+                </div>
+              </div>
+            </div> -->
             <div class="option-group">
               <label>Skill Shape</label>
               <select v-model="skillShape" @change="updateSkillShape">
@@ -2360,6 +2915,65 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 <option value="hexagon">Hexagon</option>
               </select>
             </div>
+            <div class="option-group">
+              <label>Show Skill Names</label>
+              <select v-model="showSkillNames">
+                <option :value="false">Hide</option>
+                <option :value="true">Show</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label>Show Requirements Description</label>
+              <select v-model="showRequirementsTooltip">
+                <option :value="false">Hide</option>
+                <option :value="true">Show</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="options-section">
+            <h3>New Skill Defaults</h3>
+
+            <div class="option-group">
+              <label>Default Max Skill Points</label>
+              <input
+                type="number"
+                v-model="defaultMaxSkillPoints"
+                min="1"
+                placeholder="Default max skill points for new skills"
+                title="Default max skill points for new skills"
+              />
+              <!-- @change="updateDefaultMaxSkillPoints" -->
+              <div style="margin-top: 8px">
+                <img
+                  :src="defaultSkillImage"
+                  style="width: 40px; height: 40px; border-radius: 50%"
+                />
+              </div>
+              <button class="btn" @click="openDefaultImageSelector">Set Default Skill Image</button>
+            </div>
+            <div class="option-group">
+              <label>Add New Skill On Click</label>
+              <select v-model="addSkillOnClick">
+                <option :value="false">No</option>
+                <option :value="true">Yes</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label>Keep Tooltip Open</label>
+              <select v-model="keepTooltipOpen">
+                <option :value="false">No</option>
+                <option :value="true">Yes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="options-section">
+            <h3>Auto Formating</h3>
+
+            <div class="option-group button-group" style="margin-top: 10px">
+              <button class="btn" @click="autoFormatCircle">Auto Format Skills From Circle</button>
+            </div>
           </div>
 
           <div class="options-section">
@@ -2367,6 +2981,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
             <div class="option-group button-group">
               <button class="btn" @click="importFromJson">📂 Load/Import JSON</button>
               <button class="btn" @click="exportToJson">💾 Save/Download JSON</button>
+            </div>
+            <div class="option-group button-group">
+              <button class="btn" @click="exportToGAS">
+                💾 Export for Unreal Gameplay Ability System
+              </button>
+            </div>
+            <div class="option-group button-group">
+              <button class="btn" @click="exportToDataTable">
+                💾 Export for Unreal Data Table (CSV)
+              </button>
             </div>
           </div>
         </div>
@@ -2406,6 +3030,146 @@ input[type="range"]::-webkit-slider-thumb:hover {
         </button>
       </div>
 
+      <button
+        class="info-btn"
+        @click="showInfo=!showInfo"
+        @mouseenter="showActionTooltip($event, 'Quick Guide and FAQ')"
+        @mouseleave="hideActionTooltip($event)"
+      >
+        ℹ️
+      </button>
+      <div class="info-panel" v-if="showInfo">
+        <h3>Quick Guide</h3>
+        <ul>
+          <li>Click anywhere to create a skill</li>
+          <li>Click a skill to edit, then click again to add points</li>
+          <li>Right-click a skill to remove points</li>
+          <li>Click and drag a skill to move it</li>
+          <li>Right-click and drag to pan the grid</li>
+          <li>Click a connection to edit it</li>
+          <li>Click and drag to select multiple skills</li>
+          <li>Shift+Click to select multiple skills</li>
+          <li>Ctrl+A to select all skills</li>
+          <li>Ctrl+C/V to copy/paste selected skills</li>
+          <li>Delete key to delete selected skills</li>
+          <li>Alt+Click to edit skill</li>
+        </ul>
+
+        <h3>Stats Syntax</h3>
+        <ul>
+          <li>Basic stat: "10" or "10%"</li>
+          <li>Per skill point scaling: "[5 * CurrentPoints] damage"</li>
+          <li>Level-based: "[Level 1: 1d4, Level 2: 2d6] damage"</li>
+          <li>Tree-based: "[4 * SpentTreePoints / TreeMaxPoints] damage"</li>
+        </ul>
+
+        <h3>FAQ</h3>
+        <ul>
+          <li>
+            <strong>Q: How do I change backgrounds?</strong><br />
+            A: Click the options button (⚙️) in the bottom left corner, <br />then upload a
+            background image. <br />(Small as possible for best performance)
+          </li>
+
+          <li>
+            <strong>Q: How do I save my tree?</strong><br />
+            A: Click the save icon (💾) to download as JSON
+          </li>
+
+          <li>
+            <strong>Q: How do I share my tree?</strong><br />
+            A: Click the share icon (🔗) to get a shareable link
+          </li>
+        </ul>
+      </div>
+      <button
+        class="twitter-btn"
+        @click="openAdditionalWebsite"
+        @mouseenter="showActionTooltip($event, 'Support the development')"
+        @mouseleave="hideActionTooltip($event)"
+      >
+        <div class="inner-button"></div>
+        <!-- 🐦 -->
+      </button>
+      <div class="stats-panel" v-if="showStatsSummary">
+        <h3>Total Stats</h3>
+        <div v-for="(s,n) in totalStats" :key="n" :style="{color:s.color}">
+          {{n}}: {{s.total}}{{s.isPercent ? '%' : ''}}
+        </div>
+      </div>
+
+      <!-- Connection Options Modal -->
+      <div
+        v-if="editingConnection"
+        class="edit-modal-backdrop"
+        :class="{ active: editingSkill }"
+        @click="cancelEditConnection"
+      >
+        <div class="edit-modal" @click.stop>
+          <div class="edit-form-container">
+            <h2 class="edit-skill-title">Edit Connection</h2>
+            <!--            <div class="edit-field row">
+              <label>
+                <input type="checkbox" v-model="selectedConnection.hasControlPoint" />
+                Add Control Point
+              </label>
+            </div>
+
+            <div class="edit-field">
+              <label>
+                <input type="checkbox" v-model="selectedConnection.mutuallyExclusive" />
+                Mutually Exclusive Connection
+              </label>
+              <small
+                >Other skills connected to this control point cannot be active simultaneously</small
+              >
+            </div>-->
+
+            <div
+              class="option-group"
+              title="Display this connection as a dotted line instead of solid"
+            >
+              <label class="option-edit-label">Connection Line Style (Solid or Dotted)</label>
+              <select v-model="selectedConnection.dotted">
+                <option :value="false">Solid Line</option>
+                <option :value="true">Dotted Line</option>
+              </select>
+            </div>
+
+            <div class="edit-field">
+              <button
+                class="delete-connection-btn"
+                @click="removeConnection(selectedConnection)"
+                style="
+                  background: #ff4747;
+                  color: white;
+                  border: none;
+                  padding: 8px 16px;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  margin-top: 10px;
+                "
+              >
+                Delete Connection
+              </button>
+            </div>
+
+            <small
+              >Coming soon - the ability to make t-junctions and shapes with connections.</small
+            >
+
+            <div class="edit-modal-buttons">
+              <button class="edit-modal-button cancel-button" @click="cancelEditConnection">
+                Cancel
+              </button>
+              <button class="edit-modal-button save-button" @click="saveEditConnection">
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Edit Modal -->
       <div
         v-if="editingSkill"
@@ -2421,60 +3185,97 @@ input[type="range"]::-webkit-slider-thumb:hover {
               @click="openImageSelector"
               @touchstart.prevent="openImageSelector"
               style="cursor: pointer"
+              :style="{
+                borderStyle: editingSkill.borderType || 'solid',
+                borderRadius: editingSkill.shape === 'round' ? '50%' : '0',
+                width: editingSkill.size + 'px',
+                height: editingSkill.size + 'px',
+              }"
             >
               <img :src="editingSkill.image" :alt="editingSkill.name" />
               <div class="skill-points">
                 {{ editingSkill.currentPoints }}/{{ editingSkill.maxPoints }}
               </div>
             </div>
-            <div
-              v-if="showImageSelector"
-              class="image-selector-modal"
-              :class="{ active: showImageSelector }"
-            >
-              <h2 style="color: #ffd100; margin-bottom: 20px">Select Skill Image</h2>
-              <!-- Add this inside the image selector modal, just before the image grid -->
-              <div class="image-upload-section">
-                <label for="imageUpload" class="upload-button">
-                  📤 Upload Custom Image
-                  <input
-                    type="file"
-                    id="imageUpload"
-                    accept="image/*"
-                    style="display: none"
-                    @change="handleImageUpload"
-                  />
-                </label>
-                <div class="upload-info">
-                  Supports PNG, JPG, GIF <br />
-                  (Saved in your browser.)<br />
-                  (Make images as small as possible for best performance.) <br />
-                  (Each image will increase save file size.)
+
+            <div class="skill-appearance-controls">
+              <div class="control-group">
+                <!-- <label>Size</label> -->
+                <div class="radio-group">
+                  <input type="range" v-model="editingSkill.size" min="0" max="110" step="1" />
+                  <span>{{editingSkill.size}}px</span>
+                  <label>
+                    <input
+                      type="radio"
+                      v-model="editingSkill.size"
+                      :value="skillSizePresets.small"
+                    />
+                    Small
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      v-model="editingSkill.size"
+                      :value="skillSizePresets.medium"
+                    />
+                    Medium
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      v-model="editingSkill.size"
+                      :value="skillSizePresets.large"
+                    />
+                    Large
+                  </label>
                 </div>
               </div>
-              <!-- Update the existing image grid -->
-              <div class="image-grid">
-                <img
-                  v-for="image in allImages"
-                  :key="image.id"
-                  :src="image.src"
-                  :class="['image-option', { selected: selectedImage === image.id }]"
-                  @click="selectImage(image)"
-                  :alt="image.name"
-                />
+
+              <div class="control-group">
+                <!-- <label>Shape</label> -->
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" v-model="editingSkill.shape" value="round" />
+                    Round
+                  </label>
+                  <label>
+                    <input type="radio" v-model="editingSkill.shape" value="square" />
+                    Square
+                  </label>
+                  <!-- <label>
+                    <input type="radio" v-model="editingSkill.shape" value="diamond">
+                    Diamond
+                  </label>
+                  <label>
+                    <input type="radio" v-model="editingSkill.shape" value="hexagon">
+                    Hex
+                  </label> -->
+                </div>
               </div>
-              <div class="image-selector-buttons">
-                <button class="edit-modal-button cancel-button" @click="cancelImageSelection">
-                  Cancel
-                </button>
-                <button class="edit-modal-button save-button" @click="saveImageSelection">
-                  Save
-                </button>
+
+              <div class="control-group">
+                <!-- <label>Border Style</label> -->
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" v-model="editingSkill.borderType" value="solid" />
+                    Solid
+                  </label>
+                  <!-- <label>
+                    <input type="radio" v-model="editingSkill.borderType" value="groove">
+                    Groove
+                  </label> -->
+                  <label>
+                    <input type="radio" v-model="editingSkill.borderType" value="dashed" />
+                    Dashed
+                  </label>
+                </div>
               </div>
             </div>
           </div>
           <div class="edit-form-container">
-            <h2>Edit Skill</h2>
+            <h2 class="edit-skill-title">
+              {{ selectedSkills.length > 1 ? "Editing All Selected Skills" : "Edit Skill"}}
+            </h2>
             <div class="edit-field">
               <label>Name</label>
               <input
@@ -2501,6 +3302,58 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 </button>
               </div> -->
             </div>
+            <div class="edit-field row" style="margin-bottom: 0px">
+              <!-- <label  @mouseenter="showGenerateTooltip($event, 'Points spent in tree to unlock')"
+              @mouseleave="hideGenerateTooltip($event)">Requirements</label> -->
+
+              <!-- <div class="option-group">
+                <label>Show Requirements</label>
+                <select v-model="showRequirements">
+                  <option value="global" default> Global Setting On/Off</option>
+                  <option value="on">On</option>
+                  <option value="off">Off</option>
+                </select>
+              </div> -->
+
+              <div>
+                <label title="Total points needed in the entire tree to unlock this skill"
+                  >Required Points In Tree</label
+                >
+                <input
+                  v-model="editingSkill.requiredPoints"
+                  min="0"
+                  type="number"
+                  placeholder="0"
+                  style="margin-top: 0px; margin-bottom: 15px"
+                />
+              </div>
+
+              <div class="option-group">
+                <label
+                  class="option-edit-label"
+                  title="This overrides the global unlock setting for the entire tree. Per skill settings coming soon."
+                  >Required To Unlock This Skill</label
+                >
+                <select v-model="prerequisiteMode" class="option-group-select">
+                  <option value="none">No Previous Skills Required</option>
+                  <option value="one">At Least One Skill Required</option>
+                  <option default value="all">All Previous Skills Required</option>
+                </select>
+              </div>
+
+              <!-- <div>
+                <label title="The amount of points needed for this skill to be fully unlocked"
+                  >Skill Level To Unlock Next Skill</label
+                >
+                <input
+                  v-model="editingSkill.requiredPoints"
+                  min="0"
+                  type="number"
+                  placeholder="0"
+                  style="margin-top: 0px"
+                />
+              </div>-->
+            </div>
 
             <div class="edit-field">
               <label>Description</label>
@@ -2511,7 +3364,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
               ></textarea>
             </div>
             <div class="edit-field">
-              <label>Resources/Stats</label>
+              <label
+                @mouseenter="showGenerateTooltip($event, 'Points spent in tree to unlock')"
+                @mouseleave="hideGenerateTooltip($event)"
+                >Resources/Stats</label
+              >
               <div id="resources-container">
                 <div
                   v-for="(resource, index) in editingSkill.resources"
@@ -2521,6 +3378,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   @dragstart="dragStart($event, index)"
                   @dragover.prevent
                   @drop="drop($event, index)"
+                  @mousedown="handleResourceRowMouseDown($event)"
                 >
                   <input
                     v-model="resource.name"
@@ -2553,20 +3411,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
             </div>
             <div class="edit-field row">
               <div>
-                <label
-                  @mouseenter="showGenerateTooltip($event, 'Points spent in tree to unlock')"
-                  @mouseleave="hideGenerateTooltip($event)"
-                  >Required Points</label
+                <label title="Points spent to unlock an additional skill level"
+                  >Cost Per Skill Level</label
                 >
-                <input
-                  v-model="editingSkill.requiredPoints"
-                  min="0"
-                  type="number"
-                  placeholder="0"
-                />
+                <input v-model="editingSkill.cost" min="0" type="number" placeholder="1" />
               </div>
+
               <div>
-                <label>Current Points</label>
+                <label title="Current skill level of this skill">Current Skill Level</label>
                 <input
                   v-model="editingSkill.currentPoints"
                   type="number"
@@ -2576,7 +3428,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 />
               </div>
               <div>
-                <label>Max Points</label>
+                <label title="Max points the skill can have">Max Skill Level</label>
                 <input
                   v-model="editingSkill.maxPoints"
                   type="number"
@@ -2592,6 +3444,104 @@ input[type="range"]::-webkit-slider-thumb:hover {
               <button class="edit-modal-button save-button" @click="saveEdit">Save</button>
             </div>
           </div>
+        </div>
+      </div>
+      <div
+        v-if="showImageSelector"
+        class="image-selector-modal"
+        :class="{ active: showImageSelector }"
+      >
+        <h2 style="color: #ffd100; margin-bottom: 20px">Select Skill Image</h2>
+        <!-- Add this inside the image selector modal, just before the image grid -->
+        <div class="image-upload-section">
+          <div class="upload-row">
+            <div class="image-upload-column">
+              <label for="imageUpload" class="upload-button" id="imageUpload2">
+                📤 Upload Custom Image
+                <input
+                  type="file"
+                  id="imageUpload"
+                  accept="image/*"
+                  style="display: none"
+                  @change="handleImageUpload"
+                />
+              </label>
+              <div class="upload-info">
+                Supports PNG, JPG, GIF <br />
+                (Saved in your browser.)<br />
+                (Make images as small as possible for best performance.) <br />
+                (Each image will increase save file size.)
+              </div>
+            </div>
+            <!-- <span class="divider">or</span> -->
+            <div class="url-upload">
+              <label class="upload-button" @click="handleUrlUpload" id="urlUpload"
+                >🔗 Link Image</label
+              >
+
+              <input
+                type="text"
+                v-model="imageUrl"
+                placeholder="Enter image URL here..."
+                class="url-input"
+              />
+              <div class="upload-info">
+                Copy the image url above, then click "Link Image". <br />
+                Only the link is saved, not the image data itself.<br />
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Update the existing image grid -->
+        <div class="image-grid">
+          <!-- <img
+          v-for="image in allImages"
+          :key="image.id"
+          :src="image.src"
+          :class="['image-option', { selected: selectedImage === image.id }]"
+          @click="selectImage(image)"
+          :alt="image.name"
+        /> -->
+          <div
+            v-for="image in allImages"
+            :key="image.id"
+            style="position: relative; display: inline-block"
+          >
+            <img
+              :src="image.src"
+              :class="['image-option', { selected: selectedImage === image.id }]"
+              @click="selectImage(image)"
+              :alt="image.name"
+            />
+            <button
+              v-if="!image.isDefault"
+              @click.stop="removeImage(image)"
+              class="remove-image-btn"
+              style="
+                position: absolute;
+                top: 0;
+                left: 55px;
+                background: rgba(0, 0, 0, 0.99);
+                color: rgb(255, 71, 71);
+                border: none;
+                border-radius: 50%;
+                width: 18px;
+                height: 18px;
+                font-size: 12px;
+                cursor: pointer;
+                z-index: 2;
+              "
+              title="Remove image"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div class="image-selector-buttons">
+          <button class="edit-modal-button cancel-button" @click="cancelImageSelection">
+            Cancel
+          </button>
+          <button class="edit-modal-button save-button" @click="saveImageSelection">Save</button>
         </div>
       </div>
 
@@ -2666,6 +3616,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
       createApp({
         data() {
           return {
+            hideLockedSkills: 0, // 0 = show all, 1 = hide skills, 2 = hide skills and connections
+            totalStats: {},
+            showInfo: false,
+            showStatsSummary: false, //window.innerWidth > 768,
             config: CONFIG, // Make config available in template
             skills: [],
             connections: [],
@@ -2734,6 +3688,28 @@ input[type="range"]::-webkit-slider-thumb:hover {
             showGenerateControls: true,
             lastPanTime: 0,
             treeEl: null,
+            imageUrl: "",
+            defaultSkillImage: CONFIG.paths.images.default,
+            defaultMaxSkillPoints: 5,
+            selectingDefaultImage: false,
+            showSkillNames: false,
+            skillSizePresets: {
+              small: 30,
+              medium: 60,
+              large: 110,
+            },
+            showRequirementsTooltip: true,
+            skillNamesSize: 12,
+            selectedConnection: null,
+            editingConnection: false,
+            controlPoints: [],
+            addSkillOnClick: true,
+            treeUnlockColor: "#ffd700",
+            treeUnlockBoxshadow: "0 0 5px rgba(0, 0, 0, 0.5)",
+            treeLockedColor: "#FF0000",
+            treeLockedBoxshadow: "0 0 5px rgba(0, 0, 0, 0.5)",
+            showNews: true,
+            keepTooltipOpen: false,
           };
         },
 
@@ -2809,26 +3785,80 @@ input[type="range"]::-webkit-slider-thumb:hover {
             return lines;
           },
           totalPointsSpent() {
-            return this.skills.reduce((total, skill) => total + skill.currentPoints, 0);
+            return this.skills.reduce(
+              (total, skill) => total + skill.currentPoints * (skill.cost || 1),
+              0
+            );
           },
+          //   connectionStyleGetter() {
+          //     return (connection) => {
+          //       const fromSkill = this.skills.find((s) => s.id === connection.from);
+          //       const toSkill = this.skills.find((s) => s.id === connection.to);
+
+          //       if (!fromSkill || !toSkill) return {};
+
+          //       const dx = toSkill.x - fromSkill.x;
+          //       const dy = toSkill.y - fromSkill.y;
+          //       // const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+          //       const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+          //       const length = Math.sqrt(dx * dx + dy * dy);
+
+          //       return {
+          //         left: `${fromSkill.x + (fromSkill.size / 2)}px`,
+          //         top: `${fromSkill.y + (fromSkill.size / 2)}px`,
+          //         width: `${length}px`,
+          //         height: `${this.config.connection.height}px`,
+          //         transform: `rotate(${angle}deg)`,
+          //       };
+          //     };
+          //   },
+          // },
           connectionStyleGetter() {
             return (connection) => {
-              const fromSkill = this.skills.find((s) => s.id === connection.from);
-              const toSkill = this.skills.find((s) => s.id === connection.to);
+              const from = this.skills.find((s) => s.id === connection.from);
+              const to = this.skills.find((s) => s.id === connection.to);
+              if (!from || !to) return {};
 
-              if (!fromSkill || !toSkill) return {};
+              /* ── 1. centres of both skill icons ─────────────────────────────── */
+              const fromC = { x: from.x + from.size / 2, y: from.y + from.size / 2 };
+              const toC = { x: to.x + to.size / 2, y: to.y + to.size / 2 };
 
-              const dx = toSkill.x - fromSkill.x;
-              const dy = toSkill.y - fromSkill.y;
-              const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-              const length = Math.sqrt(dx * dx + dy * dy);
+              /* ── 2. vector, angle and distance between centres ──────────────── */
+              const dx = toC.x - fromC.x;
+              const dy = toC.y - fromC.y;
+              const angleRad = Math.atan2(dy, dx);
+              const angleDeg = (angleRad * 180) / Math.PI;
+              const centreDistance = Math.hypot(dx, dy);
+
+              /* ── 3. radii of the two icons + (optional) arrow‑head length ───── */
+              const r1 = from.size / 2;
+              const r2 = to.size / 2;
+              // const arrowHead = this.config.connection.arrowHead ?? 0; // px
+              const arrowHead = 0;
+
+              /* ── 4. shift the start point outwards by r1 on the vector ──────── */
+              const startX = fromC.x + Math.cos(angleRad) * r1;
+              const startY = fromC.y + Math.sin(angleRad) * r1;
+
+              /* ── 5. final length is centre distance minus the two radii ─────── */
+              const length = centreDistance - r1 - r2 - arrowHead;
+
+              if (this.hideLockedSkills == 2) {
+                // 2 == hide skills and connections
+                if (from.currentPoints < 1 && to.currentPoints < 1) {
+                  return {};
+                }
+              }
 
               return {
-                left: `${fromSkill.x + 30}px`,
-                top: `${fromSkill.y + 30}px`,
+                position: "absolute",
+                left: `${startX}px`,
+                top: `${startY}px`,
                 width: `${length}px`,
                 height: `${this.config.connection.height}px`,
-                transform: `rotate(${angle}deg)`,
+                transform: `rotate(${angleDeg}deg)`,
+                transformOrigin: "0 50%", // pivot around the bar’s left‑centre
+                /* any other style props you already set */
               };
             };
           },
@@ -2856,9 +3886,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
           this.mode = new URLSearchParams(window.location.search).get("mode") || "edit";
           document.body.classList.toggle("view-mode", this.mode === "view");
+          document.body.classList.toggle("game-mode", this.mode === "game");
 
-          if (this.mode === "view") {
+          if (this.mode === "view" || this.mode === "game" || this.mode === "frozen") {
             this.showGlobalGrid = false;
+            this.showGenerateControls = false;
           } else {
             this.showGlobalGrid = true;
           }
@@ -3057,6 +4089,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   // Snap to grid
                   // Use the same snapToGrid method as drag operations
                   const snappedPos = this.snapToGrid(initialX, initialY);
+                  if (skillData["size"] !== undefined) {
+                    const snappedPos = this.snapToGrid(initialX, initialY, skillData["size"]);
+                  }
 
                   const skill = {
                     id: ++this.skillIdCounter,
@@ -3072,6 +4107,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
                     shouldAnimate: false,
                     resources: [],
+                    size: this.skillSizePresets.medium, // Default to medium size
+                    borderType: "solid", // Default border style
+                    shape: "round",
+                    cost: 1,
+                    prerequisiteModeOverride: "global", // "global", "one", "all"
+                    exclusiveSkillIds: [], // ids of skills that are exclusive to this skill, used in connections
                   };
                   // Add damage to resources if it exists
                   if (skillData["Skill Damage"]) {
@@ -3093,6 +4134,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
                         id: `${prereqSkill.id}-${skill.id}`,
                         from: prereqSkill.id,
                         to: skill.id,
+                        hasControlPoint: false,
+                        controlPoint: this.calculateMidpoint(prereqSkill, skill),
+                        mutuallyExclusive: false,
+                        dotted: false,
                       });
                     }
                   }
@@ -3117,6 +4162,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     this.saveToHistory();
                   }
                 });
+                this.totalStats = this.calculateTotalStats();
               })
               .catch((error) => console.error("Error loading default config:", error));
           },
@@ -3135,7 +4181,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             return { x, y };
           },
           handleClick(event) {
-            if (this.isViewMode()) return;
+            if (this.isViewMode() || this.isGameMode() || this.isFrozenMode()) return;
             // Don't create skill if we just finished making a selection
             // if (!this.selectionBox) {
             // if (!event.target.classList.contains('skill')) {
@@ -3157,10 +4203,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             if (!this.isDragging && event.target.classList.contains("talent-tree")) {
               if (!this.isDragging && this.selectionBox === null) {
-                this.createSkill(
-                  adjustedCoordinates.x, // + window.innerWidth / 2,
-                  adjustedCoordinates.y // + window.innerHeight / 2
-                );
+                if (this.addSkillOnClick) {
+                  this.createSkill(
+                    adjustedCoordinates.x, // + window.innerWidth / 2,
+                    adjustedCoordinates.y // + window.innerHeight / 2
+                  );
+                } else {
+                  this.deselectAllSkills();
+                }
               }
             }
             this.isDragging = false;
@@ -3178,15 +4228,22 @@ input[type="range"]::-webkit-slider-thumb:hover {
               showTooltip: false,
               description: "Click to edit skill description.",
               // damage: '0',
-              maxPoints: this.defaultMaxPoints,
+              maxPoints: this.defaultMaxSkillPoints,
               currentPoints: 0,
               requiredPoints: 0,
-              image: this.config.paths.images.default,
+              // image: this.config.paths.images.default,
+              image: this.defaultSkillImage,
               shouldAnimate: true, // Set to true immediately
               resources: [],
+              size: this.skillSizePresets.medium, // Default to medium size
+              borderType: "solid", // Default border style
+              shape: "round",
+              cost: 1,
+              prerequisiteModeOverride: "global", // "global", "one", "all"
+              exclusiveSkillIds: [], // ids of skills that are exclusive to this skill, used in connections
             };
             if (this.showGlobalGrid) {
-              const snappedPos = this.snapToGrid(x, y);
+              const snappedPos = this.snapToGrid(x, y, skill.size);
               skill.x = snappedPos.x;
               skill.y = snappedPos.y;
             }
@@ -3203,8 +4260,19 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
 
           toggleActions(skill) {
+            if (this.isFrozenMode()) return;
+            if (
+              this.currentName === "Try Generating a Class, or Clicking a Skill." ||
+              this.currentName === "Try Tapping A Skill"
+            ) {
+              this.currentName = " ";
+            }
             // Only process click if we haven't dragged
             if (!this.isDragging) {
+              if (event.altKey) {
+                this.editSkill(skill);
+                return;
+              }
               if (this.isLinking) {
                 // If we're in linking mode, treat this as the second skill
                 this.connectSkill(skill);
@@ -3223,15 +4291,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
               // Increment points only on clean click
               if (skill.currentPoints < skill.maxPoints) {
-                if (this.isViewMode()) {
+                if (this.isViewMode() || this.isGameMode()) {
                   if (this.canAddPoint(skill)) {
                     skill.currentPoints++;
+                    this.totalStats = this.calculateTotalStats();
                   }
                 } else {
                   if (skill.showActions) {
                     //Avoid increment if first click to edit skil
                     if (this.canAddPoint(skill)) {
                       skill.currentPoints++;
+                      this.totalStats = this.calculateTotalStats();
                     }
                   } else {
                     skill.showActions = true;
@@ -3241,7 +4311,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 }
               }
 
-              if (this.isViewMode()) return;
+              if (this.isViewMode() || this.isGameMode()) return;
 
               // Don't toggle if actions are already shown
               // if (!skill.showActions) {
@@ -3256,6 +4326,23 @@ input[type="range"]::-webkit-slider-thumb:hover {
               ...skill,
               resources: skill.resources || [],
             };
+
+            // used to check which part of the skill has been modified in this editing session
+            this.editingSkill._initialName = skill.name;
+            this.editingSkill._initialDescription = skill.description;
+            this.editingSkill._initialDamage = skill.damage;
+            this.editingSkill._initialImage = skill.image;
+            this.editingSkill._initialMaxPoints = skill.maxPoints;
+            this.editingSkill._initialCurrentPoints = skill.currentPoints;
+            this.editingSkill._initialRequiredPoints = skill.requiredPoints;
+            this.editingSkill._initialResources = skill.resources || [];
+            this.editingSkill._initialSize = skill.size;
+            this.editingSkill._initialBorderType = skill.borderType;
+            this.editingSkill._initialShape = skill.shape;
+            this.editingSkill._initialCost = skill.cost;
+            this.editingSkill._initialPrerequisiteModeOverride = skill.prerequisiteModeOverride;
+            this.editingSkill._initialExclusiveSkillIds = skill.exclusiveSkillIds;
+
             // Focus name input after modal opens
             this.$nextTick(() => {
               this.$refs.nameInput?.focus();
@@ -3265,22 +4352,111 @@ input[type="range"]::-webkit-slider-thumb:hover {
           saveEdit() {
             if (!this.editingSkill) return;
 
-            const skill = this.skills.find((s) => s.id === this.editingSkill.id);
-            if (skill) {
-              skill.name = this.editingSkill.name;
-              skill.description = this.editingSkill.description;
-              skill.damage = this.editingSkill.damage;
-              skill.image = this.editingSkill.image;
+            // single skill edit
+            if (this.selectedSkills.length <= 1) {
+              const skill = this.skills.find((s) => s.id === this.editingSkill.id);
+              if (skill) {
+                skill.name = this.editingSkill.name;
+                skill.description = this.editingSkill.description;
+                skill.damage = this.editingSkill.damage;
+                skill.image = this.editingSkill.image;
 
-              // Handle max points and current points changes
-              const newMaxPoints = parseInt(this.editingSkill.maxPoints);
-              const newCurrentPoints = parseInt(this.editingSkill.currentPoints);
-              const newRequiredPoints = parseInt(this.editingSkill.requiredPoints);
-              skill.maxPoints = newMaxPoints;
-              skill.currentPoints = Math.min(newCurrentPoints, newMaxPoints); // Update current points
-              skill.requiredPoints = newRequiredPoints;
-              skill.resources = this.editingSkill.resources || [];
+                // Handle max points and current points changes
+                const newMaxPoints = parseInt(this.editingSkill.maxPoints);
+                const newCurrentPoints = parseInt(this.editingSkill.currentPoints);
+                const newRequiredPoints = parseInt(this.editingSkill.requiredPoints);
+                skill.maxPoints = newMaxPoints;
+                skill.currentPoints = Math.min(newCurrentPoints, newMaxPoints); // Update current points
+                skill.requiredPoints = newRequiredPoints;
+                skill.resources = this.editingSkill.resources || [];
+                skill.size = this.editingSkill.size;
+                skill.borderType = this.editingSkill.borderType;
+                skill.shape = this.editingSkill.shape;
+                skill.cost = this.editingSkill.cost;
+                skill.prerequisiteModeOverride = this.editingSkill.prerequisiteModeOverride;
+                skill.exclusiveSkillIds = this.editingSkill.exclusiveSkillIds;
+                // console.log("skill", skill);
+
+                if (this.showGlobalGrid) {
+                  const snappedPos = this.snapToGrid(skill.x, skill.y, skill.size);
+                  skill.x = snappedPos.x;
+                  skill.y = snappedPos.y;
+                }
+
+                this.totalStats = this.calculateTotalStats();
+              }
+            } else {
+              // multiple skill edit
+              console.log("in multiple skill edit");
+              this.selectedSkills.forEach((skill) => {
+                // const skill = this.skills.find((s) => s.id === skill.id);
+                if (skill) {
+                  // If updated the name or field this editing sessions
+                  // Check if each field has been modified in this editing session by comparing with initial state
+                  if (this.editingSkill.name !== this.editingSkill._initialName) {
+                    skill.name = this.editingSkill.name;
+                  }
+                  if (this.editingSkill.description !== this.editingSkill._initialDescription) {
+                    skill.description = this.editingSkill.description;
+                  }
+                  if (this.editingSkill.damage !== this.editingSkill._initialDamage) {
+                    skill.damage = this.editingSkill.damage;
+                  }
+                  if (this.editingSkill.image !== this.editingSkill._initialImage) {
+                    skill.image = this.editingSkill.image;
+                  }
+                  if (this.editingSkill.currentPoints !== this.editingSkill._initialCurrentPoints) {
+                    skill.currentPoints = parseInt(this.editingSkill.currentPoints);
+                  }
+                  if (this.editingSkill.maxPoints !== this.editingSkill._initialMaxPoints) {
+                    skill.maxPoints = parseInt(this.editingSkill.maxPoints);
+                    skill.currentPoints = Math.min(
+                      parseInt(this.editingSkill.currentPoints),
+                      skill.maxPoints
+                    );
+                  }
+                  if (
+                    this.editingSkill.requiredPoints !== this.editingSkill._initialRequiredPoints
+                  ) {
+                    skill.requiredPoints = parseInt(this.editingSkill.requiredPoints);
+                  }
+                  if (
+                    JSON.stringify(this.editingSkill.resources) !==
+                    JSON.stringify(this.editingSkill._initialResources)
+                  ) {
+                    skill.resources = this.editingSkill.resources || [];
+                  }
+                  if (this.editingSkill.size !== this.editingSkill._initialSize) {
+                    skill.size = this.editingSkill.size;
+                  }
+                  if (this.editingSkill.borderType !== this.editingSkill._initialBorderType) {
+                    skill.borderType = this.editingSkill.borderType;
+                  }
+                  if (this.editingSkill.shape !== this.editingSkill._initialShape) {
+                    skill.shape = this.editingSkill.shape;
+                  }
+                  if (this.editingSkill.cost !== this.editingSkill._initialCost) {
+                    skill.cost = this.editingSkill.cost;
+                  }
+                  if (
+                    this.editingSkill.prerequisiteModeOverride !==
+                    this.editingSkill._initialPrerequisiteModeOverride
+                  ) {
+                    skill.prerequisiteModeOverride = this.editingSkill.prerequisiteModeOverride;
+                  }
+                  if (
+                    this.editingSkill.exclusiveSkillIds !==
+                    this.editingSkill._initialExclusiveSkillIds
+                  ) {
+                    skill.exclusiveSkillIds = this.editingSkill.exclusiveSkillIds;
+                  }
+
+                  // want to override skills in another
+                  // skill.name = this.editingSkill.name;
+                }
+              });
             }
+
             this.editingSkill = null;
             this.showImageSelector = false;
             this.saveToHistory();
@@ -3314,6 +4490,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   id: `${this.connectingFrom.id}-${skill.id}`,
                   from: this.connectingFrom.id,
                   to: skill.id,
+                  hasControlPoint: false,
+                  controlPoint: this.calculateMidpoint(this.connectingFrom, skill),
+                  mutuallyExclusive: false,
+                  dotted: false,
                 });
               }
               // Reset connection state
@@ -3344,7 +4524,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
 
           startDrag(event, skill) {
-            if (this.isViewMode()) return;
+            if (this.isViewMode() || this.isGameMode() || this.isFrozenMode()) return;
 
             event.preventDefault();
             let pointerOld = event.touches ? event.touches[0] : event;
@@ -3494,7 +4674,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
               // Apply grid snapping if enabled
               if (this.showGlobalGrid) {
-                const snappedPos = this.snapToGrid(newX, newY);
+                const snappedPos = this.snapToGrid(newX, newY, this.draggedSkill.size);
 
                 finalX = snappedPos.x;
                 finalY = snappedPos.y;
@@ -3594,9 +4774,41 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
 
           decrementPoints(skill) {
+            if (this.isFrozenMode()) return;
             if (skill.currentPoints > 0) {
               skill.currentPoints--;
+
+              // Only check dependent skills if in view/game mode and points were fully removed
+              if (
+                (this.isViewMode() || this.isGameMode() || this.isFrozenMode()) &&
+                skill.currentPoints === 0
+              ) {
+                this.checkAndRemoveDependentSkills(skill);
+              }
+
+              this.totalStats = this.calculateTotalStats();
             }
+          },
+          checkAndRemoveDependentSkills(skill) {
+            // Get all outgoing connections from this skill
+            const outgoingConnections = this.connections.filter((conn) => conn.from === skill.id);
+
+            // Check each dependent skill
+            outgoingConnections.forEach((conn) => {
+              const dependentSkill = this.skills.find((s) => s.id === conn.to);
+              if (dependentSkill && dependentSkill.currentPoints > 0) {
+                // Check if the dependent skill still meets requirements
+                if (!this.canAddPoint(dependentSkill, "no warning")) {
+                  // If requirements not met, recursively remove points
+                  while (dependentSkill.currentPoints > 0) {
+                    dependentSkill.currentPoints--;
+                    if (dependentSkill.currentPoints === 0) {
+                      this.checkAndRemoveDependentSkills(dependentSkill);
+                    }
+                  }
+                }
+              }
+            });
           },
 
           isConnectionActive(connection) {
@@ -3615,7 +4827,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
           startPan(event) {
             if (event.button === 0 && event.target.classList.contains("talent-tree")) {
               // Left click for selection box
-              if (this.isViewMode()) return;
+              if (this.isViewMode() || this.isGameMode() || this.isFrozenMode()) return;
               event.preventDefault();
               let adjustedCoordinates = this.getAdjustedCoordinates(
                 event.offsetX,
@@ -3649,6 +4861,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 this.skills.forEach((skill) => {
                   skill.x += event.movementX;
                   skill.y += event.movementY;
+
+                  // const newSkillX = skill.x + event.movementX;
+                  // const newSkillY = skill.y + event.movementY;
+
+                  // Object.defineProperty(skill, "x", {
+                  //   value: newSkillX,
+                  //   configurable: true,
+                  //   enumerable: true,
+                  // });
+                  // Object.defineProperty(skill, "y", {
+                  //   value: newSkillY,
+                  //   configurable: true,
+                  //   enumerable: true,
+                  // });
+
                   //         const skillElement = document.querySelector(`[data-skill-id="${skill.id}"]`);
                   // if (skillElement) {
                   //   skillElement.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
@@ -4093,7 +5320,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 image: `${this.config.paths.images.skills}${skillData["Skill Image"]}`,
                 shouldAnimate: false,
                 resources: skillData["Skill Resources"] || [],
+                size: skillData["size"] || this.skillSizePresets.medium, // Default to medium size
+                borderType: skillData["borderType"] || "solid", // Default border style
+                shape: skillData["shape"] || "round",
+                cost: skillData["cost"] || 1,
+                prerequisiteModeOverride: skillData["prerequisiteModeOverride"] || "global", // "global", "one", "all"
+                exclusiveSkillIds: skillData["exclusiveSkillIds"] || [], // ids of skills that are exclusive to this skill, used in connections
               };
+              console.log(skillData["shape"] || "round");
+              console.log("gell");
 
               // Add damage to resources if it exists
               if (skillData["Skill Damage"]) {
@@ -4114,9 +5349,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     id: `${prereqSkill.id}-${skill.id}`,
                     from: prereqSkill.id,
                     to: skill.id,
+                    hasControlPoint: false,
+                    controlPoint: this.calculateMidpoint(prereqSkill, skill),
+                    mutuallyExclusive: false,
+                    dotted: false,
                   });
                 }
               }
+              this.totalStats = this.calculateTotalStats();
             });
 
             // Trigger animations with a slight delay for each skill
@@ -4398,7 +5638,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
             }
 
             const previousState = this.history[this.historyIndex - 1];
-
+            console.log("previousState", this.history);
             if (!previousState || !previousState.skills || previousState.skills.length === 0) {
               console.warn("Invalid previous state:", previousState);
               return;
@@ -4470,10 +5710,26 @@ input[type="range"]::-webkit-slider-thumb:hover {
           selectImage(image) {
             this.selectedImage = image.id;
             // Use the image src directly instead of trying to construct a path
-            this.editingSkill.image = image.src;
+            if (this.editingSkill !== null) {
+              this.editingSkill.image = image.src;
+            }
           },
 
           saveImageSelection() {
+            console.log("saveImageSelection");
+            console.log(this.selectingDefaultImage);
+            if (this.selectingDefaultImage) {
+              // Set the default image
+              this.defaultSkillImage = this.allImages.find(
+                (img) => img.id === this.selectedImage
+              ).src;
+              this.showImageSelector = false;
+              this.selectingDefaultImage = false;
+              // Optionally save to localStorage for persistence
+              localStorage.setItem("defaultSkillImage", this.defaultSkillImage);
+              return;
+            }
+
             // Don't modify the image path - use it as is
             this.editingSkill.image = this.editingSkill.image;
             this.showImageSelector = false;
@@ -4486,6 +5742,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
 
           cancelImageSelection() {
+            if (this.selectingDefaultImage) {
+              this.showImageSelector = false;
+              this.selectingDefaultImage = false;
+              return;
+            }
+
             this.showImageSelector = false;
             this.selectedImage = null;
           },
@@ -4539,6 +5801,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   this.currentClassDescription = data.currentClassDescription;
                   this.updateBackground();
                   this.updateSkillShape();
+                  this.totalStats = this.calculateTotalStats();
                 } else {
                   // when scaling fix, all origin got moved to the top left a full screen
                   //tree position doesnt work need tomove skills
@@ -4547,7 +5810,55 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     skill.y += window.innerHeight;
                   });
                 }
-                console.log("adjusting visiblity");
+                if (data.treeUnlockColor !== undefined) {
+                  this.treeUnlockColor = data.treeUnlockColor;
+                  this.updateTreeUnlockColor();
+                }
+
+                console.log("data", data);
+                console.log("showStatsSummary", data.showStatsSummary);
+                console.log(
+                  "data.showStatsSummary !== undefined",
+                  data.showStatsSummary !== undefined
+                );
+                //Todo, find a better way to load all settings from a save file
+                // These also need to be added when saving the file
+                if (data.showStatsSummary !== undefined) {
+                  this.showStatsSummary = data.showStatsSummary;
+                  console.log("showStatsSummary2", this.showStatsSummary);
+                }
+                if (data.showSkillNames !== undefined) {
+                  this.showSkillNames = data.showSkillNames;
+                }
+                if (data.showRequirementsTooltip !== undefined) {
+                  this.showRequirementsTooltip = data.showRequirementsTooltip;
+                }
+
+                if (data.keepTooltipOpen !== undefined) {
+                  this.keepTooltipOpen = data.keepTooltipOpen;
+                }
+
+                // When adding new parameters to the skills, the old skills from old files will not have the new parameters.
+                // So we need to add them to the old skills.
+                // console.log(data);
+                if (data.skills[0].size !== undefined) {
+                } else {
+                  this.skills.forEach((skill) => {
+                    skill.size = skill.size || this.skillSizePresets.medium;
+                    skill.borderType = skill.borderType || "solid";
+                    skill.shape = skill.shape || "round";
+                  });
+                }
+
+                if (data.skills[0].cost !== undefined) {
+                } else {
+                  this.skills.forEach((skill) => {
+                    skill.cost = skill.cost || 1;
+                    skill.prerequisiteModeOverride = skill.prerequisiteModeOverride || "global";
+                    skill.exclusiveSkillIds = skill.exclusiveSkillIds || [];
+                  });
+                }
+
                 this.putTreeInViewport();
 
                 // Mark tree as loaded
@@ -4575,6 +5886,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
               currentClassDescription: this.currentClassDescription,
               timestamp: new Date().toISOString(),
               id: crypto.randomUUID(),
+              showStatsSummary: this.showStatsSummary,
+              showSkillNames: this.showSkillNames,
+              showRequirementsTooltip: this.showRequirementsTooltip,
+              treeUnlockColor: this.treeUnlockColor,
+              keepTooltipOpen: this.keepTooltipOpen,
             };
 
             fetch("/save_tree", {
@@ -4591,13 +5907,14 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 const modal = document.createElement("div");
                 modal.className = "share-modal";
                 modal.innerHTML = `
-                                              <button class="close-btn">✕</button>
-                                              <h3>Share Your Skill Tree</h3>
-                                              <div class="share-link"><a href="${shareableUrl}" target="_blank"> ${shareableUrl}</a></div>
-                                              <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
-                                                  Copy Link
-                                              </button>
-                                          `;
+                                                                        <button class="close-btn">✕</button>
+                                                                        <h3>Share Your Skill Tree</h3>
+                                                                        <div class="share-link"><a href="${shareableUrl}" target="_blank"> ${shareableUrl}</a></div>
+                                                                        <button class="copy-btn" onclick="navigator.clipboard.writeText('${shareableUrl}').then(() => this.textContent = 'Copied!').catch(() => this.textContent = 'Failed to copy')">
+                                                                            Copy Link
+                                                                        </button>
+                                                                        <div style="font-size: 12px; padding: 10px; margin-top: 10px; color: white; font-family: Verdana, sans-serif;"> I do my best to keep these trees saved and available, please consider also downloading a backup tree file by clicking the 'Save Skill Tree' button in the bottom left.</div>
+                                                                    `;
                 document.body.appendChild(modal);
 
                 // Update click handler to include close button
@@ -4640,6 +5957,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   if (data.FullData) {
                     this.showLoadModal = true;
                     this.loadedData = data;
+
                     //  Do loading from view modal buttons
                   } else {
                     // Fallback to original import logic
@@ -4738,18 +6056,40 @@ input[type="range"]::-webkit-slider-thumb:hover {
           openDiscord() {
             window.open("https://discord.gg/VQy45jAhFP", "_blank");
           },
+          openAdditionalWebsite() {
+            window.open("https://www.patreon.com/OpenRPGTools", "_blank");
+          },
           isViewMode() {
             return this.mode === "view";
           },
+          isGameMode() {
+            return this.mode === "game";
+          },
+          isFrozenMode() {
+            return this.mode === "frozen";
+          },
           handleModeChange() {
             const url = new URL(window.location);
-            this.mode === "view"
-              ? url.searchParams.set("mode", "view")
-              : url.searchParams.delete("mode");
-            window.history.pushState({}, "", url);
-            document.body.classList.toggle("view-mode", this.mode === "view");
-
             if (this.mode === "view") {
+              url.searchParams.set("mode", "view");
+            } else if (this.mode === "game") {
+              url.searchParams.set("mode", "game");
+            } else if (this.mode === "frozen") {
+              url.searchParams.set("mode", "frozen");
+            } else {
+              url.searchParams.delete("mode");
+            }
+            window.history.pushState({}, "", url);
+
+            // Toggle appropriate class based on mode
+            document.body.classList.remove("view-mode", "game-mode");
+            if (this.mode === "view") {
+              document.body.classList.add("view-mode");
+            } else if (this.mode === "game") {
+              document.body.classList.add("game-mode");
+            }
+
+            if (this.mode === "view" || this.mode === "game" || this.mode === "frozen") {
               this.showGlobalGrid = false;
               this.skills.forEach((s) => {
                 s.showActions = false;
@@ -4776,11 +6116,105 @@ input[type="range"]::-webkit-slider-thumb:hover {
               )}, ${this.overlayOpacity / 100})), url('${this.currentBackgroundLink}')`;
             }
           },
-          removeConnection(connection) {
-            if (this.isViewMode()) return; // Don't remove connections in view mode
-            this.connections = this.connections.filter((c) => c.id !== connection.id);
+          updateTreeUnlockColor() {
+            // console.log("selection color", this.treeUnlockColor);
+            // const activeConnections = document.querySelectorAll(
+            //   ".connection.active .connection-after"
+            // );
+            // activeConnections.forEach((conn) => {
+            //   conn.style.borderLeftColor = this.treeUnlockColor;
+            // });
+
+            // const activeConnectionBodies = document.querySelectorAll(".connection.active");
+            // activeConnectionBodies.forEach((conn) => {
+            //   conn.style.background = this.treeUnlockColor;
+            //   conn.style.boxShadow = `0 0 5px ${this.treeUnlockColor}`;
+            // });
+
+            // const selectedSkills = document.querySelectorAll(".skill.selected");
+            // selectedSkills.forEach((skill) => {
+            //   skill.style.borderColor = this.treeUnlockColor;
+            //   skill.style.boxShadow = `0 0 10px ${this.treeUnlockColor}`;
+            // });
+
+            // const skilledSkills = document.querySelectorAll(".skill.skilled");
+            // skilledSkills.forEach((skill) => {
+            //   skill.style.border = `2px solid ${this.treeUnlockColor}`;
+            //   skill.style.boxShadow = `0 0 10px ${this.treeUnlockColor}`;
+            // });
+
+            // Update CSS variable for hover effects
+            document.documentElement.style.setProperty("--tree-unlock-color", this.treeUnlockColor);
+
+            // const tree = document.querySelector(".talent-tree");
+            // if (tree) {
+            //   tree.style.backgroundImage = `linear-gradient(rgba(${parseInt(
+            //     this.overlayColor.slice(1, 3),
+            //     16
+            //   )}, ${parseInt(this.overlayColor.slice(3, 5), 16)}, ${parseInt(
+            //     this.overlayColor.slice(5, 7),
+            //     16
+            //   )}, ${this.selectionOpacity / 100}), rgba(${parseInt(
+            //     this.overlayColor.slice(1, 3),
+            //     16
+            //   )}, ${parseInt(this.selectionColor.slice(3, 5), 16)}, ${parseInt(
+            //     this.selectionColor.slice(5, 7),
+            //     16
+            //   )}, ${this.selectionOpacity / 100})), url('${this.currentBackgroundLink}')`;
+            // }
+          },
+          editConnection(connection) {
+            if (this.isViewMode() || this.isGameMode() || this.isFrozenMode()) return;
+            this.selectedConnection = connection;
+            this.editingConnection = true;
+          },
+          cancelEditConnection() {
+            this.editingConnection = false;
+            this.selectedConnection = null;
+          },
+          saveEditConnection() {
+            this.editingConnection = false;
+            this.selectedConnection = null;
             this.saveToHistory();
           },
+          startDragControlPoint(event, connection) {
+            if (this.isViewMode() || this.isGameMode() || this.isFrozenMode()) return;
+
+            this.draggedConnection = connection;
+            event.preventDefault();
+
+            document.addEventListener("mousemove", this.dragControlPoint);
+            document.addEventListener("mouseup", this.stopDragControlPoint);
+          },
+
+          dragControlPoint(event) {
+            if (!this.draggedConnection) return;
+
+            const rect = this.$el.querySelector(".talent-tree").getBoundingClientRect();
+            const x = (event.clientX - rect.left) / this.scale;
+            const y = (event.clientY - rect.top) / this.scale;
+
+            this.draggedConnection.controlPoint.x = x;
+            this.draggedConnection.controlPoint.y = y;
+          },
+
+          stopDragControlPoint() {
+            this.draggedConnection = null;
+            document.removeEventListener("mousemove", this.dragControlPoint);
+            document.removeEventListener("mouseup", this.stopDragControlPoint);
+            this.saveToHistory();
+          },
+
+          removeConnection(connection) {
+            if (this.isViewMode() || this.isGameMode() || this.isFrozenMode()) return; // Don't remove connections in view mode
+            this.connections = this.connections.filter((c) => c.id !== connection.id);
+            this.saveToHistory();
+            if (this.editingConnection) {
+              this.editingConnection = false;
+              this.selectedConnection = null;
+            }
+          },
+
           dragStart(e, fromIndex) {
             e.dataTransfer.setData("index", fromIndex);
           },
@@ -4792,7 +6226,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
             resources.splice(toIndex, 0, resource);
             this.editingSkill.resources = resources;
           },
-          snapToGrid(x, y) {
+          snapToGrid(x, y, skillSize = 60) {
+            // let skillSize = this.editingSkill.size;
             const size = parseInt(this.gridSize) / 2; // Use half the grid size for center points
             const offsetX = this.treePosition.x % (size * 2);
             const offsetY = this.treePosition.y % (size * 2);
@@ -4800,14 +6235,74 @@ input[type="range"]::-webkit-slider-thumb:hover {
             const gridOffset = size / 2;
             // Adjust position by grid size and offset, then subtract skill offset
             return {
-              x: Math.round((x - offsetX + gridOffset / 2) / size) * size + offsetX - 30,
-              y: Math.round((y - offsetY + gridOffset / 2) / size) * size + offsetY - 30,
+              x: Math.round((x - offsetX + gridOffset / 2) / size) * size + offsetX - skillSize / 2,
+              y: Math.round((y - offsetY + gridOffset / 2) / size) * size + offsetY - skillSize / 2,
             };
+          },
+          // Helper function to check if a prerequisite skill requirement is satisfied
+          // This accounts for mutually exclusive skills - if any skill in a mutually exclusive group has points,
+          // the requirement is considered satisfied
+          isPrerequisiteSatisfied(prereqSkill) {
+            // Direct satisfaction - the skill itself has points
+            if (prereqSkill && prereqSkill.currentPoints > 0) {
+              return true;
+            }
+
+            // Check if any mutually exclusive skills have points
+            if (
+              prereqSkill &&
+              prereqSkill.exclusiveSkillIds &&
+              prereqSkill.exclusiveSkillIds.length > 0
+            ) {
+              return prereqSkill.exclusiveSkillIds.some((exclusiveId) => {
+                const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+                return exclusiveSkill && exclusiveSkill.currentPoints > 0;
+              });
+            }
+
+            return false;
           },
           canAddPoint(skill, option = "show warning") {
             // Check if adding a point would exceed max points
             if (this.totalPointsSpent >= this.maxPoints) {
               return false;
+            }
+
+            // Check mutual exclusivity
+            if (skill.exclusiveSkillIds && skill.exclusiveSkillIds.length > 0) {
+              const hasExclusiveSkillActive = skill.exclusiveSkillIds.some((exclusiveId) => {
+                const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+                return exclusiveSkill && exclusiveSkill.currentPoints > 0;
+              });
+
+              if (hasExclusiveSkillActive) {
+                if (option === "show warning") {
+                  const activeExclusiveSkills = skill.exclusiveSkillIds
+                    .filter((exclusiveId) => {
+                      const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+                      return exclusiveSkill && exclusiveSkill.currentPoints > 0;
+                    })
+                    .map((exclusiveId) => {
+                      const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+                      return exclusiveSkill.name;
+                    })
+                    .join(", ");
+
+                  const toast = document.createElement("div");
+                  toast.className = "toast-notification";
+                  toast.textContent = `Cannot unlock ${skill.name} - conflicts with: ${activeExclusiveSkills}`;
+                  document.body.appendChild(toast);
+
+                  toast.offsetHeight;
+                  toast.classList.add("show");
+
+                  setTimeout(() => {
+                    toast.classList.remove("show");
+                    setTimeout(() => toast.remove(), 300);
+                  }, 3000);
+                }
+                return false;
+              }
             }
 
             // Check if required points are met
@@ -4840,16 +6335,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 return false;
               }
             }
+
             // Check prerequisites (incoming connections)
             const incomingConnections = this.connections.filter((conn) => conn.to === skill.id);
             if (incomingConnections.length > 0) {
               if (this.prerequisiteMode === "none") {
                 return true;
               } else if (this.prerequisiteMode === "all") {
-                // Check if ALL prerequisite skills are unlocked
+                // Check if ALL prerequisite skills are unlocked (including through mutual exclusivity)
                 const allPrereqsUnlocked = incomingConnections.every((conn) => {
                   const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                  return prereqSkill && prereqSkill.currentPoints > 0;
+                  return this.isPrerequisiteSatisfied(prereqSkill);
                 });
 
                 if (!allPrereqsUnlocked) {
@@ -4862,11 +6358,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     const missingPrereqs = incomingConnections
                       .filter((conn) => {
                         const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                        return !prereqSkill || prereqSkill.currentPoints === 0;
+                        return !this.isPrerequisiteSatisfied(prereqSkill);
                       })
                       .map((conn) => {
                         const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                        return prereqSkill.name;
+                        return prereqSkill?.name || "Unknown";
                       })
                       .join(", ");
 
@@ -4884,11 +6380,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   return false;
                 }
               } else {
-                // 'one'
-                // Check if at least one prerequisite skill is unlocked
+                // 'one' mode - Check if at least one prerequisite skill is unlocked (including through mutual exclusivity)
                 const hasUnlockedPrereq = incomingConnections.some((conn) => {
                   const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                  return prereqSkill && prereqSkill.currentPoints > 0;
+                  return this.isPrerequisiteSatisfied(prereqSkill);
                 });
 
                 if (!hasUnlockedPrereq) {
@@ -4896,7 +6391,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     const prereqSkills = incomingConnections
                       .map((conn) => {
                         const prereqSkill = this.skills.find((s) => s.id === conn.from);
-                        return prereqSkill.name;
+                        return prereqSkill?.name || "Unknown";
                       })
                       .join(" or ");
 
@@ -4922,6 +6417,161 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
             return true;
           },
+          // canAddPoint(skill, option = "show warning") {
+          //   // Check if adding a point would exceed max points
+          //   if (this.totalPointsSpent >= this.maxPoints) {
+          //     return false;
+          //   }
+
+          //   // Check mutual exclusivity
+          //   if (skill.exclusiveSkillIds && skill.exclusiveSkillIds.length > 0) {
+          //     const hasExclusiveSkillActive = skill.exclusiveSkillIds.some((exclusiveId) => {
+          //       const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+          //       return exclusiveSkill && exclusiveSkill.currentPoints > 0;
+          //     });
+
+          //     if (hasExclusiveSkillActive) {
+          //       if (option === "show warning") {
+          //         const activeExclusiveSkills = skill.exclusiveSkillIds
+          //           .filter((exclusiveId) => {
+          //             const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+          //             return exclusiveSkill && exclusiveSkill.currentPoints > 0;
+          //           })
+          //           .map((exclusiveId) => {
+          //             const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+          //             return exclusiveSkill.name;
+          //           })
+          //           .join(", ");
+
+          //         const toast = document.createElement("div");
+          //         toast.className = "toast-notification";
+          //         toast.textContent = `Cannot unlock ${skill.name} - conflicts with: ${activeExclusiveSkills}`;
+          //         document.body.appendChild(toast);
+
+          //         toast.offsetHeight;
+          //         toast.classList.add("show");
+
+          //         setTimeout(() => {
+          //           toast.classList.remove("show");
+          //           setTimeout(() => toast.remove(), 300);
+          //         }, 3000);
+          //       }
+          //       return false;
+          //     }
+          //   }
+
+          //   // Check if required points are met
+          //   if (skill.requiredPoints && this.totalPointsSpent < skill.requiredPoints) {
+          //     // Create and show toast notification
+          //     if (option === "show warning") {
+          //       const toast = document.createElement("div");
+          //       toast.className = "toast-notification";
+          //       toast.textContent = `${skill.name} requires ${skill.requiredPoints} points spent. Current: ${this.totalPointsSpent}`;
+          //       document.body.appendChild(toast);
+
+          //       // Trigger reflow to ensure animation plays
+          //       toast.offsetHeight;
+          //       toast.classList.add("show");
+
+          //       // Remove toast after animation
+          //       setTimeout(() => {
+          //         toast.classList.remove("show");
+          //         setTimeout(() => toast.remove(), 300); // Remove after fade out
+          //       }, 2000);
+          //     }
+          //     return false;
+          //   }
+
+          //   // Check if skill has required points
+          //   if (skill.damage) {
+          //     // Using old damage field for required points
+          //     const requiredPoints = parseInt(skill.damage);
+          //     if (!isNaN(requiredPoints) && this.totalPointsSpent < requiredPoints) {
+          //       return false;
+          //     }
+          //   }
+          //   // Check prerequisites (incoming connections)
+          //   const incomingConnections = this.connections.filter((conn) => conn.to === skill.id);
+          //   if (incomingConnections.length > 0) {
+          //     if (this.prerequisiteMode === "none") {
+          //       return true;
+          //     } else if (this.prerequisiteMode === "all") {
+          //       // Check if ALL prerequisite skills are unlocked
+          //       const allPrereqsUnlocked = incomingConnections.every((conn) => {
+          //         const prereqSkill = this.skills.find((s) => s.id === conn.from);
+          //         return prereqSkill && prereqSkill.currentPoints > 0;
+          //       });
+
+          //       if (!allPrereqsUnlocked) {
+          //         if (option === "show warning") {
+          //           // Show toast notification for prerequisite requirement
+          //           const toast = document.createElement("div");
+          //           toast.className = "toast-notification";
+
+          //           // Get list of missing prerequisites
+          //           const missingPrereqs = incomingConnections
+          //             .filter((conn) => {
+          //               const prereqSkill = this.skills.find((s) => s.id === conn.from);
+          //               return !prereqSkill || prereqSkill.currentPoints === 0;
+          //             })
+          //             .map((conn) => {
+          //               const prereqSkill = this.skills.find((s) => s.id === conn.from);
+          //               return prereqSkill.name;
+          //             })
+          //             .join(", ");
+
+          //           toast.textContent = `${skill.name} requires: ${missingPrereqs} to unlock`;
+          //           document.body.appendChild(toast);
+
+          //           toast.offsetHeight;
+          //           toast.classList.add("show");
+
+          //           setTimeout(() => {
+          //             toast.classList.remove("show");
+          //             setTimeout(() => toast.remove(), 300);
+          //           }, 3000);
+          //         }
+          //         return false;
+          //       }
+          //     } else {
+          //       // 'one'
+          //       // Check if at least one prerequisite skill is unlocked
+          //       const hasUnlockedPrereq = incomingConnections.some((conn) => {
+          //         const prereqSkill = this.skills.find((s) => s.id === conn.from);
+          //         return prereqSkill && prereqSkill.currentPoints > 0;
+          //       });
+
+          //       if (!hasUnlockedPrereq) {
+          //         if (option === "show warning") {
+          //           const prereqSkills = incomingConnections
+          //             .map((conn) => {
+          //               const prereqSkill = this.skills.find((s) => s.id === conn.from);
+          //               return prereqSkill.name;
+          //             })
+          //             .join(" or ");
+
+          //           // Show toast notification for prerequisite requirement
+          //           const toast = document.createElement("div");
+          //           toast.className = "toast-notification";
+          //           toast.textContent = `${skill.name} requires: ${prereqSkills} to unlock`;
+
+          //           document.body.appendChild(toast);
+
+          //           toast.offsetHeight;
+          //           toast.classList.add("show");
+
+          //           setTimeout(() => {
+          //             toast.classList.remove("show");
+          //             setTimeout(() => toast.remove(), 300);
+          //           }, 3000);
+          //         }
+          //         return false;
+          //       }
+          //     }
+          //   }
+
+          //   return true;
+          // },
           toggleSkillSelection(skill) {
             if (this.isViewMode()) return;
             //  if n
@@ -5054,6 +6704,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
                 }
                 // console.log("loading for key", key);
                 this[key] = this.loadedData.FullData[key];
+                this.totalStats = this.calculateTotalStats();
+                this.historyIndex = 0;
               });
               // console.log("prerequisiteMode", this.loadedData.FullData.prerequisiteMode);
               if (this.loadedData.FullData.prerequisiteMode !== undefined) {
@@ -5063,6 +6715,25 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   skill.y += window.innerHeight / 2;
                 });
               }
+
+              // console.log(this.loadedData.FullData.skills[0]);
+              if (this.loadedData.FullData.skills[0].size !== undefined) {
+              } else {
+                this.skills.forEach((skill) => {
+                  skill.size = skill.size || this.skillSizePresets.medium;
+                  skill.borderType = skill.borderType || "solid";
+                  skill.shape = skill.shape || "round";
+                });
+              }
+              if (this.loadedData.FullData.skills[0].cost !== undefined) {
+              } else {
+                this.skills.forEach((skill) => {
+                  skill.cost = skill.cost || 1;
+                  skill.prerequisiteModeOverride = skill.prerequisiteModeOverride || "global";
+                  skill.exclusiveSkillIds = skill.exclusiveSkillIds || [];
+                });
+              }
+
               this.treeEl = document.querySelector(".talent-tree");
 
               // console.log("not adjusting visiblity");
@@ -5102,6 +6773,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
               // this.handleZoom();
 
               this.updateBackground();
+              if (this.treeUnlockColor !== undefined) {
+                this.updateTreeUnlockColor();
+              }
             } else if (mode === "merge") {
               this.deselectAllSkills();
               const offset = 0; // Increased offset for better visibility
@@ -5144,12 +6818,35 @@ input[type="range"]::-webkit-slider-thumb:hover {
                       showActions: false,
                       shouldAnimate: true,
                       resources: skillData["Skill Resources"] || [],
+                      size: skillData["size"] || this.skillSizePresets.medium, // Default to medium size
+                      borderType: skillData["borderType"] || "solid", // Default border style
+                      shape: skillData["shape"] || "round",
+                      cost: skillData["cost"] || 1,
+                      prerequisiteModeOverride: skillData["prerequisiteModeOverride"] || "global", // "global", "one", "all"
+                      exclusiveSkillIds: skillData["exclusiveSkillIds"] || [], // ids of skills that are exclusive to this skill, used in connections
                     };
 
                 // Store the mapping of old ID to new ID
                 idMap[skillData.id || skillData["Skill Name"]] = newId;
                 this.skills.push(skill);
               });
+
+              if (this.loadedData.FullData.skills[0].size !== undefined) {
+              } else {
+                this.skills.forEach((skill) => {
+                  skill.size = skill.size || this.skillSizePresets.medium;
+                  skill.borderType = skill.borderType || "solid";
+                  skill.shape = skill.shape || "round";
+                });
+              }
+              if (this.loadedData.FullData.skills[0].cost !== undefined) {
+              } else {
+                this.skills.forEach((skill) => {
+                  skill.cost = skill.cost || 1;
+                  skill.prerequisiteModeOverride = skill.prerequisiteModeOverride || "global";
+                  skill.exclusiveSkillIds = skill.exclusiveSkillIds || [];
+                });
+              }
 
               // Second pass: Create connections with updated IDs
               if (this.loadedData.FullData?.connections) {
@@ -5159,6 +6856,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
                     id: `${idMap[conn.from]}-${idMap[conn.to]}`,
                     from: idMap[conn.from],
                     to: idMap[conn.to],
+                    hasControlPoint: false,
+                    controlPoint: { x: 0, y: 0 },
+                    mutuallyExclusive: false,
+                    dotted: false,
                   });
                 });
               } else {
@@ -5174,6 +6875,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
                         id: `${fromId}-${toId}`,
                         from: fromId,
                         to: toId,
+                        hasControlPoint: false,
+                        controlPoint: { x: 0, y: 0 },
+                        mutuallyExclusive: false,
+                        dotted: false,
                       });
                     }
                   }
@@ -5188,6 +6893,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
                   }
                 });
               }, 100);
+              this.totalStats = this.calculateTotalStats();
             }
 
             this.showLoadModal = false;
@@ -5326,6 +7032,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
             });
             //hide skill description preview
           },
+          isTextInputActive() {
+            const activeElement = document.activeElement;
+
+            // Check if the active element is a text input field
+            return (
+              activeElement &&
+              ((activeElement.tagName === "INPUT" &&
+                ["text", "password", "email", "number", "search", "tel", "url"].includes(
+                  activeElement.type
+                )) ||
+                activeElement.tagName === "TEXTAREA" ||
+                activeElement.contentEditable === "true")
+            );
+          },
+
           copy() {
             // It seems like this.selectedSkills cannot be accessed here.
             // Possibly due to a scope issue.
@@ -5342,6 +7063,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
           },
 
           paste() {
+            if (this.isTextInputActive()) {
+              return;
+            }
             this.deselectAllSkills();
 
             // append "copy" to the skill name
@@ -5461,6 +7185,843 @@ input[type="range"]::-webkit-slider-thumb:hover {
               : multipliedValue.toFixed(1);
 
             return hasPercent ? formattedValue + "%" : formattedValue;
+          },
+          calculateTotalStats() {
+            // console.log("calculating total stats");
+            return this.skills.reduce((totals, skill) => {
+              if (skill.currentPoints > 0 && skill.resources) {
+                skill.resources.forEach(({ name, value, color }) => {
+                  const parsedStat = this.parseStatValue(value, skill.currentPoints);
+                  // console.log(
+                  //   "calculating total stats",
+                  //   name,
+                  //   value,
+                  //   skill.currentPoints,
+                  //   parsedStat
+                  // );
+
+                  const hasPercent = value.includes("%");
+                  const numberMatch = value.match(/[-+]?\d*\.?\d+/);
+                  const val = numberMatch ? parseFloat(parsedStat) : 0;
+
+                  totals[name] = totals[name] || { total: 0, color, isPercent: hasPercent };
+                  totals[name].total += val;
+                });
+              }
+              return totals;
+            }, {});
+          },
+          showStatValue() {
+            this.calculateTotalStats();
+          },
+          parseStatValue(value, currentPoints) {
+            // Ensure that value is a non-null string.
+            if (typeof value !== "string") {
+              throw new TypeError("The value must be a string.");
+            }
+
+            // Trim the input value to remove extra whitespace.
+            value = value.trim();
+
+            value = value.replace(/SpentTreePoints/g, this.totalPointsSpent);
+            value = value.replace(/TreeMaxPoints/g, this.maxPoints);
+
+            // Regex for detecting a bracket expression with optional trailing text.
+            const bracketRegex = /\[([^\]]+)\](.*)/;
+            const bracketMatch = value.match(bracketRegex);
+
+            if (bracketMatch) {
+              let expression = bracketMatch[1].trim(); // Text inside the brackets.
+              let suffix = bracketMatch[2] ? bracketMatch[2].trim() : ""; // Any trailing text.
+
+              // --- Level-Based Mapping ---
+              if (/^Level\b/i.test(expression)) {
+                const levelMapping = {};
+                // Capture level mappings like "Level 1: 10" or "Level 1: 1d4".
+                const levelRegex = /Level\s*(\d+):\s*([^,]+)/gi;
+                let m;
+                while ((m = levelRegex.exec(expression)) !== null) {
+                  const level = parseInt(m[1], 10);
+                  const val = m[2].trim();
+                  levelMapping[level] = val;
+                }
+
+                // Use currentPoints as a level indicator.
+                let selectedValue = levelMapping[currentPoints];
+                if (selectedValue === undefined) {
+                  // Fallback: choose the highest defined level less than or equal to currentPoints.
+                  const levels = Object.keys(levelMapping)
+                    .map(Number)
+                    .sort((a, b) => a - b);
+                  for (let i = levels.length - 1; i >= 0; i--) {
+                    if (currentPoints >= levels[i]) {
+                      selectedValue = levelMapping[levels[i]];
+                      break;
+                    }
+                  }
+                }
+                return selectedValue ? selectedValue + (suffix ? " " + suffix : "") : null;
+              }
+
+              // --- Per Point Scaling / Arithmetic Expression ---
+              // Validate allowed characters: digits, spaces, arithmetic symbols, parentheses, dot, %, and "CurrentPoints".
+              // make sure this is only in the [ ] section
+              // if (!/^[\d\s\+\-\*\/\.\%\(\)CurrentPoints]+$/i.test(expression)) {
+              //   throw new Error("Invalid characters in the arithmetic expression.");
+              // }
+
+              // Convert percentages to decimals (e.g. "5%" => "0.05").
+              expression = expression.replace(/(\d+)%/g, (_, p1) => {
+                return (parseFloat(p1) / 100).toString();
+              });
+
+              // Replace all occurrences of "CurrentPoints" with the provided currentPoints.
+              expression = expression.replace(/CurrentPoints/g, currentPoints);
+
+              expression = expression.replace(/\^/g, "**");
+              expression = expression
+                .replace(/round\(/g, "Math.round(")
+                .replace(/floor\(/g, "Math.floor(")
+                .replace(/ceil\(/g, "Math.ceil(");
+
+              let result;
+              try {
+                // Evaluate the arithmetic expression.
+                result = new Function("return " + expression)();
+              } catch (error) {
+                // console.error("Error evaluating expression:", expression, error);
+                // throw new Error("Error evaluating expression: " + expression);
+                return 0;
+              }
+
+              return result + (suffix ? " " + suffix : "");
+            } else if (value.includes("CurrentPoints")) {
+              // --- No Brackets but Contains "CurrentPoints" ---
+              // Use a regex to capture an arithmetic expression possibly followed by text.
+              // This regex splits the string into an arithmetic part and an optional suffix.
+              const nonBracketRegex = /^([\d\s\+\-\*\/\.\%\(\)\^CurrentPoints]+)(.*)$/i;
+              const nonBracketMatch = value.match(nonBracketRegex);
+
+              if (nonBracketMatch) {
+                let expression = nonBracketMatch[1].trim();
+                let suffix = nonBracketMatch[2] ? nonBracketMatch[2].trim() : "";
+
+                // Validate allowed characters (the same basic check as for the bracketed case).
+                if (!/^[\d\s\+\-\*\/\.\%\(\)CurrentPoints]+$/i.test(expression)) {
+                  throw new Error("Invalid characters in the arithmetic expression.");
+                }
+
+                // Convert percentage values to decimals.
+                expression = expression.replace(/(\d+)%/g, (_, p1) => {
+                  return (parseFloat(p1) / 100).toString();
+                });
+
+                // Replace "CurrentPoints" with the actual value.
+                expression = expression.replace(/CurrentPoints/g, currentPoints);
+
+                expression = expression.replace(/\^/g, "**");
+                expression = expression
+                  .replace(/round\(/g, "Math.round(")
+                  .replace(/floor\(/g, "Math.floor(")
+                  .replace(/ceil\(/g, "Math.ceil(");
+
+                let result;
+                try {
+                  result = new Function("return " + expression)();
+                } catch (error) {
+                  // console.error("Error evaluating expression:", expression, error);
+                  // throw new Error("Error evaluating expression: " + expression);
+                  return 0;
+                }
+
+                return result + (suffix ? " " + suffix : "");
+              } else {
+                throw new Error("Expression containing 'CurrentPoints' is in an invalid format.");
+              }
+            } else {
+              // --- Basic Stat Value Handling ---
+              // Process basic values. If the value ends with a percent, return the string;
+              // if numeric, return it as a number.
+              if (value.endsWith("%")) {
+                return value;
+              } else if (!isNaN(value)) {
+                return parseFloat(value);
+              } else {
+                return value;
+              }
+            }
+          },
+
+          // parseStatValue(value, currentPoints) {
+          //   if (!value) return "0";
+
+          //   // Handle expressions with CurrentPoints
+          //   if (value.includes("[") && !value.includes("Level")) {
+          //     const match = value.match(/\[(.*?)\]/);
+          //     if (match) {
+          //       const expression = match[1].replace("CurrentPoints", currentPoints);
+          //       try {
+          //         const result = eval(expression);
+          //         return Number.isInteger(result) ? result.toString() : result.toFixed(1);
+          //       } catch (e) {
+          //         return value;
+          //       }
+          //     }
+          //   } else {
+          //     // Handle level-based values
+          //     const levelMatch = value.match(/Level \d+: ([^,\]]+)/);
+          //     if (levelMatch) {
+          //       return levelMatch[1].trim();
+          //     }
+          //   }
+
+          //   // Handle basic numbers with optional percentage
+          //   // const numberMatch = value.match(/[-+]?\d*\.?\d+/);
+          //   // if (numberMatch) {
+          //   //   const number = parseFloat(numberMatch[0]);
+          //   //   return value.includes("%") ? `${number}%` : number.toString();
+          //   // }
+
+          //   console.log("parsing stat value", value, currentPoints);
+
+          //   return value;
+          // },
+          handleResourceRowMouseDown(event) {
+            // Only allow drag if we're not clicking on an input
+            if (!event.target.matches("input")) {
+              event.target.closest(".edit-resource-row").draggable = true;
+            } else {
+              event.target.closest(".edit-resource-row").draggable = false;
+            }
+          },
+          exportToDataTable() {
+            // Deselect all skills for clean export
+            this.deselectAllSkills();
+
+            // Define CSV headers that match a typical Unreal Engine struct
+            // These should match exactly what you'd define in your UStruct
+            const headers = [
+              "SkillName", // FName - Primary key for the data table
+              "DisplayName", // FText - User-friendly name
+              "Description", // FText - Skill description
+              "MaxRank", // int32 - Maximum skill rank
+              "InitialRank", // int32 - Starting rank
+              "RequiredPoints", // int32 - Points needed in tree to unlock
+              "SkillIcon", // FSoftObjectPath - Path to icon texture
+              "Prerequisites", // FString - Semicolon separated list of required skill names
+              "Cost", // int32 - Cost to acquire
+              "Cooldown", // float - Base cooldown in seconds
+              "ManaCost", // float - Base mana cost
+              "DamageValue", // float - Base damage value
+              "DamageType", // FString - Type of damage (Physical, Magic, etc.)
+              "EffectTags", // FString - Semicolon separated gameplay tags
+              "StatRequirements", // FString - Required stats in format "StatName:Value;StatName:Value"
+              "AbilityClass", // FSoftClassPath - Reference to the gameplay ability class
+              "RowName", // FName - Unique identifier (same as SkillName, required for import)
+            ].join(",");
+
+            // Convert skills to CSV rows
+            const rows = this.skills.map((skill) => {
+              // Get prerequisites
+              const prerequisites = this.connections
+                .filter((conn) => conn.to === skill.id)
+                .map((conn) => {
+                  const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                  return prereqSkill ? prereqSkill.name : "";
+                })
+                .join(";");
+
+              // Parse resources for common attributes
+              let damageValue = "0.0";
+              let damageType = "None";
+              let manaCost = "0.0";
+              let cooldown = "0.0";
+              let effectTags = [];
+
+              if (skill.resources) {
+                skill.resources.forEach((resource) => {
+                  const name = resource.name.toLowerCase();
+                  const value = this.parseEffectValue(resource.value, skill.currentPoints);
+
+                  if (name.includes("damage")) {
+                    damageValue = value;
+                    damageType = name.includes("magic")
+                      ? "Magic"
+                      : name.includes("physical")
+                      ? "Physical"
+                      : "Generic";
+                  }
+                  if (name.includes("mana")) manaCost = value;
+                  if (name.includes("cooldown")) cooldown = value;
+
+                  // Convert resource to gameplay tag
+                  effectTags.push(`Ability.Effect.${resource.name.replace(/\s+/g, "")}`);
+                });
+              }
+
+              // Create the row with proper escaping for CSV
+              const rowData = [
+                skill.name.replace(/\s+/g, ""), // SkillName (no spaces for FName)
+                skill.name, // DisplayName
+                (skill.description || "").replace(/"/g, '""'), // Description
+                skill.maxPoints, // MaxRank
+                skill.currentPoints, // InitialRank
+                skill.requiredPoints || 0, // RequiredPoints
+                skill.image.includes("data:") // SkillIcon
+                  ? "/Game/Icons/DefaultAbility"
+                  : `/Game/Icons/${skill.image.split("/").pop().replace(".png", "")}`,
+                prerequisites, // Prerequisites
+                "1", // Cost
+                cooldown, // Cooldown
+                manaCost, // ManaCost
+                damageValue, // DamageValue
+                damageType, // DamageType
+                effectTags.join(";"), // EffectTags
+                "", // StatRequirements
+                `/Game/Abilities/GA_${skill.name.replace(/\s+/g, "")}`, // AbilityClass
+                skill.name.replace(/\s+/g, ""), // RowName
+              ].map((value) => {
+                // Wrap values in quotes if they contain commas or quotes
+                if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+                  return `"${value}"`;
+                }
+                return value;
+              });
+
+              return rowData.join(",");
+            });
+
+            // Add a comment line explaining the struct needed
+            const structComment = [
+              "// To import this CSV, create a Data Table with a struct containing these fields:",
+              "// SkillName (FName), DisplayName (FText), Description (FText), MaxRank (int32),",
+              "// InitialRank (int32), RequiredPoints (int32), SkillIcon (FSoftObjectPath),",
+              "// Prerequisites (FString), Cost (int32), Cooldown (float), ManaCost (float),",
+              "// DamageValue (float), DamageType (FString), EffectTags (FString),",
+              "// StatRequirements (FString), AbilityClass (FSoftClassPath), RowName (FName)",
+            ].join("\n");
+
+            // Combine comment, headers and rows
+            const csv = [structComment, headers, ...rows].join("\n");
+
+            // Create and trigger download
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `Unreal Engine Data Table.csv`);
+            link.click();
+            URL.revokeObjectURL(link.href);
+          },
+          exportToGAS() {
+            // Deselect all skills for clean export
+            this.deselectAllSkills();
+
+            const gasData = {
+              AbilitySet: {
+                Name: this.currentName.replace(/\s+/g, "_"),
+                Description: this.currentClassDescription || "Generated Ability Set",
+                Abilities: this.skills.map((skill) => ({
+                  AbilityName: skill.name.replace(/\s+/g, "_"),
+                  AbilityClass: "GameplayAbility",
+                  AbilityLevel: skill.currentPoints,
+                  MaxLevel: skill.maxPoints,
+                  Prerequisites: this.connections
+                    .filter((conn) => conn.to === skill.id)
+                    .map((conn) => {
+                      const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                      return prereqSkill ? prereqSkill.name.replace(/\s+/g, "_") : null;
+                    })
+                    .filter((name) => name !== null),
+                  Effects: skill.resources
+                    ? skill.resources.map((resource) => ({
+                        EffectName: `GE_${skill.name.replace(/\s+/g, "_")}_${resource.name.replace(
+                          /\s+/g,
+                          "_"
+                        )}`,
+                        EffectType: this.determineEffectType(resource),
+                        Magnitude: this.parseEffectValue(resource.value, skill.currentPoints),
+                        Duration: this.isDurationEffect(resource)
+                          ? this.parseDuration(resource.value)
+                          : -1, // -1 for infinite
+                        ModifierType: this.determineModifierType(resource),
+                      }))
+                    : [],
+                  Tags: [
+                    `Ability.${this.currentName.replace(/\s+/g, "_")}.${skill.name.replace(
+                      /\s+/g,
+                      "_"
+                    )}`,
+                  ],
+                  RequiredPoints: skill.requiredPoints || 0,
+                  IconPath: skill.image.includes("data:")
+                    ? "Default Ability Icon"
+                    : skill.image.split("/").pop(),
+                })),
+              },
+            };
+
+            // Create and trigger download
+            const dataStr = JSON.stringify(gasData, null, 2);
+            const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+            const exportFileDefaultName = `Unreal Gameplay Ability System.json`;
+
+            const linkElement = document.createElement("a");
+            linkElement.setAttribute("href", dataUri);
+            linkElement.setAttribute("download", exportFileDefaultName);
+            linkElement.click();
+          },
+
+          // Helper methods for GAS export
+          determineEffectType(resource) {
+            const name = resource.name.toLowerCase();
+            if (name.includes("damage")) return "Instant";
+            if (name.includes("buff") || name.includes("boost")) return "Duration";
+            if (name.includes("cooldown")) return "Cooldown";
+            return "Infinite";
+          },
+
+          parseEffectValue(value, currentPoints) {
+            try {
+              // Handle percentage values
+              if (typeof value === "string" && value.includes("%")) {
+                return parseFloat(value) / 100;
+              }
+              // Handle numeric values
+              const numValue = parseFloat(value);
+              return isNaN(numValue) ? 1.0 : numValue;
+            } catch (e) {
+              return 1.0;
+            }
+          },
+
+          isDurationEffect(resource) {
+            const name = resource.name.toLowerCase();
+            return (
+              name.includes("duration") ||
+              name.includes("buff") ||
+              name.includes("boost") ||
+              name.includes("temporary")
+            );
+          },
+
+          parseDuration(value) {
+            // Default duration in seconds
+            try {
+              const numValue = parseFloat(value);
+              return isNaN(numValue) ? 5.0 : numValue;
+            } catch (e) {
+              return 5.0;
+            }
+          },
+
+          determineModifierType(resource) {
+            const name = resource.name.toLowerCase();
+            const value = resource.value.toString().toLowerCase();
+
+            if (value.includes("%") || name.includes("multiplier") || name.includes("percent")) {
+              return "Multiplicative";
+            }
+            return "Additive";
+          },
+          handleUrlUpload() {
+            if (!this.imageUrl) {
+              const urlInput = document.querySelector(".url-input");
+              if (urlInput) {
+                urlInput.focus();
+              }
+              return;
+            }
+
+            const newImage = {
+              id: "custom-" + Date.now(),
+              src: this.imageUrl,
+              name: this.imageUrl.split("/").pop() || "URL Image",
+              isDefault: false,
+            };
+
+            this.customImages.push(newImage);
+            localStorage.setItem("customImages", JSON.stringify(this.customImages));
+            this.selectImage(newImage);
+            this.imageUrl = ""; // Clear the input
+          },
+          openDefaultImageSelector() {
+            this.showImageSelector = true;
+            this.selectingDefaultImage = true;
+            // // Preselect the current default
+            // const currentImage = this.allImages.find(img => img.src === this.defaultSkillImage);
+            // this.selectedImage = currentImage ? currentImage.id : null;
+          },
+
+          autoFormatCircle() {
+            // First, identify root nodes (skills with no prerequisites)
+            const rootNodes = this.skills.filter((skill) => {
+              return !this.connections.some((conn) => conn.to === skill.id);
+            });
+
+            // Calculate center of the viewport
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            // Place root nodes in a circle at the center
+            const rootRadius = 150; // Radius for root nodes circle
+            rootNodes.forEach((rootNode, index) => {
+              const angle = (index / rootNodes.length) * 2 * Math.PI;
+              rootNode.x = centerX + rootRadius * Math.cos(angle);
+              rootNode.y = centerY + rootRadius * Math.sin(angle);
+            });
+
+            // Helper function to get all direct children of a node
+            const getChildren = (nodeId) => {
+              return this.connections
+                .filter((conn) => conn.from === nodeId)
+                .map((conn) => this.skills.find((s) => s.id === conn.to));
+            };
+
+            // Helper function to get the level of a node (distance from root)
+            const getNodeLevel = (nodeId, visited = new Set()) => {
+              if (visited.has(nodeId)) return 0;
+              visited.add(nodeId);
+
+              const parentConns = this.connections.filter((conn) => conn.to === nodeId);
+              if (parentConns.length === 0) return 0;
+
+              return (
+                1 +
+                Math.max(...parentConns.map((conn) => getNodeLevel(conn.from, new Set(visited))))
+              );
+            };
+
+            // Process each root node's branches
+            rootNodes.forEach((rootNode, rootIndex) => {
+              const processNode = (node, level, parentAngle, spreadAngle) => {
+                const children = getChildren(node.id);
+                if (children.length === 0) return;
+
+                const radius = rootRadius + level * 150; // Increase radius for each level
+                const angleStep = spreadAngle / children.length;
+                const startAngle = parentAngle - spreadAngle / 2;
+
+                children.forEach((child, index) => {
+                  const childAngle = startAngle + angleStep * (index + 0.5);
+                  child.x = centerX + radius * Math.cos(childAngle);
+                  child.y = centerY + radius * Math.sin(childAngle);
+
+                  // Calculate spread angle for next level based on available space
+                  const nextSpreadAngle = angleStep * 0.8; // Slightly reduce spread for next level
+                  processNode(child, level + 1, childAngle, nextSpreadAngle);
+                });
+              };
+
+              // Calculate initial spread angle for this root node's branch
+              const spreadAngle = (2 * Math.PI) / rootNodes.length;
+              const rootAngle = (rootIndex / rootNodes.length) * 2 * Math.PI;
+              processNode(rootNode, 1, rootAngle, spreadAngle);
+            });
+
+            // Snap all positions to grid if grid snap is enabled
+            if (this.gridSnapEnabled) {
+              this.skills.forEach((skill) => {
+                const snapped = this.snapToGrid(skill.x, skill.y, skill.size);
+                skill.x = snapped.x;
+                skill.y = snapped.y;
+              });
+            }
+
+            this.handleResize();
+            // Save the new layout to history
+            this.saveToHistory();
+          },
+
+          removeImage(image) {
+            // Remove from customImages
+            this.customImages = this.customImages.filter((img) => img.id !== image.id);
+            localStorage.setItem("customImages", JSON.stringify(this.customImages));
+            // Deselect if it was selected
+
+            if (this.selectedImage === image.id) {
+              const defaultImageObj = this.allImages.find((img) => img.isDefault);
+              this.selectedImage = defaultImageObj ? defaultImageObj.id : null;
+              // this.selectedImage = null;
+              if (this.editingSkill) {
+                this.editingSkill.image = defaultImageObj ? defaultImageObj.src : "";
+              }
+            }
+          },
+          getUnmetRequirements(skill) {
+            const requirements = [];
+
+            // Check mutual exclusivity
+            if (skill.exclusiveSkillIds && skill.exclusiveSkillIds.length > 0) {
+              const activeExclusiveSkills = skill.exclusiveSkillIds
+                .filter((exclusiveId) => {
+                  const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+                  return exclusiveSkill && exclusiveSkill.currentPoints > 0;
+                })
+                .map((exclusiveId) => {
+                  const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+                  return exclusiveSkill.name;
+                });
+
+              if (activeExclusiveSkills.length > 0) {
+                requirements.push(`Conflicts with: ${activeExclusiveSkills.join(", ")}`);
+              } else {
+                // Show which skills are mutually exclusive (even if not active)
+                const exclusiveSkillNames = skill.exclusiveSkillIds
+                  .map((exclusiveId) => {
+                    const exclusiveSkill = this.skills.find((s) => s.id === exclusiveId);
+                    return exclusiveSkill?.name || "Unknown";
+                  })
+                  .filter((name) => name !== "Unknown");
+
+                if (exclusiveSkillNames.length > 0) {
+                  requirements.push(`Mutually exclusive with: ${exclusiveSkillNames.join(", ")}`);
+                }
+              }
+            }
+
+            // Check if we have enough total points spent
+            if (skill.requiredPoints && this.totalPointsSpent < skill.requiredPoints) {
+              requirements.push(
+                `${skill.requiredPoints} total points needed (Current: ${this.totalPointsSpent})`
+              );
+            }
+
+            // Check if skill has required points using legacy damage field
+            if (skill.damage) {
+              const requiredPoints = parseInt(skill.damage);
+              if (!isNaN(requiredPoints) && this.totalPointsSpent < requiredPoints) {
+                requirements.push(
+                  `${requiredPoints} total points needed (Current: ${this.totalPointsSpent})`
+                );
+              }
+            }
+
+            // Check prerequisite skills
+            const incomingConnections = this.connections.filter((conn) => conn.to === skill.id);
+            if (incomingConnections.length > 0 && this.prerequisiteMode !== "none") {
+              if (this.prerequisiteMode === "all") {
+                // Check if ALL prerequisite skills are unlocked
+                const missingPrereqs = incomingConnections
+                  .filter((conn) => {
+                    const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                    return !prereqSkill || prereqSkill.currentPoints === 0;
+                  })
+                  .map((conn) => {
+                    const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                    return prereqSkill?.name || "Unknown";
+                  });
+
+                if (missingPrereqs.length > 0) {
+                  requirements.push(`Requires: ${missingPrereqs.join(", ")}`);
+                }
+              } else {
+                // 'one' mode - check if at least one prerequisite skill is unlocked
+                const hasUnlockedPrereq = incomingConnections.some((conn) => {
+                  const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                  return prereqSkill && prereqSkill.currentPoints > 0;
+                });
+
+                if (!hasUnlockedPrereq) {
+                  const prereqNames = incomingConnections.map((conn) => {
+                    const prereqSkill = this.skills.find((s) => s.id === conn.from);
+                    return prereqSkill?.name || "Unknown";
+                  });
+                  requirements.push(`Requires one of: ${prereqNames.join(" or ")}`);
+                }
+              }
+            }
+
+            return requirements;
+          },
+          calculateMidpoint(fromSkill, toSkill) {
+            const fromCenterX = fromSkill.x + fromSkill.size / 2;
+            const fromCenterY = fromSkill.y + fromSkill.size / 2;
+            const toCenterX = toSkill.x + toSkill.size / 2;
+            const toCenterY = toSkill.y + toSkill.size / 2;
+
+            return {
+              x: (fromCenterX + toCenterX) / 2,
+              y: (fromCenterY + toCenterY) / 2,
+            };
+          },
+          splitSkill(skill) {
+            // Hide actions for the original skill
+            skill.showActions = false;
+
+            // Calculate positions for the two new skills
+            const offsetDistance = this.gridSize / 2; // Distance between split skills
+            const skill1X = skill.x - offsetDistance;
+            const skill2X = skill.x + offsetDistance;
+
+            // Create first skill (left)
+            const skill1 = {
+              id: ++this.skillIdCounter,
+              name: `${skill.name} Option A`,
+              description: skill.description,
+              x: skill1X,
+              y: skill.y,
+              showActions: false,
+              showTooltip: false,
+              maxPoints: skill.maxPoints,
+              currentPoints: 0,
+              requiredPoints: skill.requiredPoints || 0,
+              image: skill.image,
+              shouldAnimate: true,
+              resources: [...(skill.resources || [])],
+              size: skill.size,
+              borderType: skill.borderType,
+              shape: skill.shape,
+              cost: skill.cost,
+              prerequisiteModeOverride: skill.prerequisiteModeOverride,
+              exclusiveSkillIds: [], // Will be set after creating skill2
+            };
+
+            // Create second skill (right)
+            const skill2 = {
+              id: ++this.skillIdCounter,
+              name: `${skill.name} Option B`,
+              description: skill.description,
+              x: skill2X,
+              y: skill.y,
+              showActions: false,
+              showTooltip: false,
+              maxPoints: skill.maxPoints,
+              currentPoints: 0,
+              requiredPoints: skill.requiredPoints || 0,
+              image: skill.image,
+              shouldAnimate: true,
+              resources: [...(skill.resources || [])],
+              size: skill.size,
+              borderType: skill.borderType,
+              shape: skill.shape,
+              cost: skill.cost,
+              prerequisiteModeOverride: skill.prerequisiteModeOverride,
+              exclusiveSkillIds: [], // Will be set after creating skill1
+            };
+
+            // Set mutual exclusivity between the two skills
+            skill1.exclusiveSkillIds = [skill2.id];
+            skill2.exclusiveSkillIds = [skill1.id];
+
+            // Snap to grid if enabled
+            if (this.showGlobalGrid) {
+              const snappedPos1 = this.snapToGrid(skill1.x, skill1.y, skill1.size);
+              const snappedPos2 = this.snapToGrid(skill2.x, skill2.y, skill2.size);
+              skill1.x = snappedPos1.x;
+              skill1.y = snappedPos1.y;
+              skill2.x = snappedPos2.x;
+              skill2.y = snappedPos2.y;
+            }
+
+            // Update connections that pointed to the original skill
+            this.connections.forEach((connection) => {
+              if (connection.to === skill.id) {
+                // Create connections to both new skills
+                this.connections.push({
+                  id: `${connection.from}-${skill1.id}`,
+                  from: connection.from,
+                  to: skill1.id,
+                  hasControlPoint: connection.hasControlPoint,
+                  controlPoint: this.calculateMidpoint(
+                    this.skills.find((s) => s.id === connection.from),
+                    skill1
+                  ),
+                  mutuallyExclusive: false,
+                  dotted: false,
+                });
+
+                this.connections.push({
+                  id: `${connection.from}-${skill2.id}`,
+                  from: connection.from,
+                  to: skill2.id,
+                  hasControlPoint: connection.hasControlPoint,
+                  controlPoint: this.calculateMidpoint(
+                    this.skills.find((s) => s.id === connection.from),
+                    skill2
+                  ),
+                  mutuallyExclusive: false,
+                  dotted: false,
+                });
+              }
+
+              if (connection.from === skill.id) {
+                // Update connections from the original skill
+                // Create connections from both new skills to the target
+                this.connections.push({
+                  id: `${skill1.id}-${connection.to}`,
+                  from: skill1.id,
+                  to: connection.to,
+                  hasControlPoint: connection.hasControlPoint,
+                  controlPoint: this.calculateMidpoint(
+                    skill1,
+                    this.skills.find((s) => s.id === connection.to)
+                  ),
+                  mutuallyExclusive: false,
+                  dotted: false,
+                });
+
+                this.connections.push({
+                  id: `${skill2.id}-${connection.to}`,
+                  from: skill2.id,
+                  to: connection.to,
+                  hasControlPoint: connection.hasControlPoint,
+                  controlPoint: this.calculateMidpoint(
+                    skill2,
+                    this.skills.find((s) => s.id === connection.to)
+                  ),
+                  mutuallyExclusive: false,
+                  dotted: false,
+                });
+              }
+            });
+
+            // Remove the original skill and its connections
+            this.skills = this.skills.filter((s) => s.id !== skill.id);
+            this.connections = this.connections.filter(
+              (c) => c.from !== skill.id && c.to !== skill.id
+            );
+
+            // Add the two new skills
+            this.skills.push(skill1, skill2);
+
+            // Save to history
+            this.saveToHistory();
+
+            // Force animation to show
+            this.$nextTick(() => {
+              const skill1Element = document.querySelector(`[data-skill-id="${skill1.id}"] img`);
+              const skill2Element = document.querySelector(`[data-skill-id="${skill2.id}"] img`);
+              if (skill1Element) skill1Element.style.opacity = "1";
+              if (skill2Element) skill2Element.style.opacity = "1";
+            });
+          },
+          calculateMidpoint(fromSkill, toSkill) {
+            const fromCenterX = fromSkill.x + fromSkill.size / 2;
+            const fromCenterY = fromSkill.y + fromSkill.size / 2;
+            const toCenterX = toSkill.x + toSkill.size / 2;
+            const toCenterY = toSkill.y + toSkill.size / 2;
+
+            return {
+              x: (fromCenterX + toCenterX) / 2,
+              y: (fromCenterY + toCenterY) / 2,
+            };
+          },
+          skillMouseEnter(skill) {
+            if (!this.keepTooltipOpen) {
+              skill.showTooltip = true;
+            } else {
+              skill.showTooltip = true;
+              // only close the old tooltip if it's not the same skill
+              if (this.hoveredSkill && this.hoveredSkill.id !== skill.id) {
+                this.hoveredSkill.showTooltip = false;
+              }
+              this.hoveredSkill = skill;
+            }
+          },
+          skillMouseLeave(skill) {
+            if (!this.keepTooltipOpen) {
+              skill.showTooltip = false;
+            }
           },
         },
       }).mount("#app");
