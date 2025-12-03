@@ -26,9 +26,25 @@ if you have npx and browser-sync:
 
 # Tests
 
-Setup in progress, using default Playwright.
+Using default playwright.
 
-# Open Contribution Ideas - Anyone can contribute!
+### Install Tests
+
+`npm install`
+then ` npx playwright install` to install browsers.
+
+### Run Tests
+
+`npx playwright test` to run tests.
+make sure `http://127.0.0.1:5500/` is on when running tests.
+
+###
+
+`npx playwright show-report`
+
+`npx playwright test --headed` to see browser ui.
+
+# Open Contribution Ideas - Anyone can contribute
 
 | Feature            | Implementation  | Test Status         |
 | ------------------ | --------------- | ------------------- |
@@ -45,10 +61,10 @@ Setup in progress, using default Playwright.
 | Prerequsite Skills | ✅ Complete     | ❌ Needs Tests      |
 | Multi-Skill Select | ✅ Complete     | ❌ Needs Tests      |
 | Multi-Skill Move   | ✅ Complete     | ❌ Needs Tests      |
-| Multi-Skill Delete | ❌ Not Started  | ❌ Needs Tests      |
-| Multi-Skill Edit   | ❌ Not Started  | ❌ Needs Tests      |
+| Multi-Skill Delete | ✅ Complete     | ❌ Needs Tests      |
+| Multi-Skill Edit   | ✅ Complete     | ❌ Needs Tests      |
 | Node Styling       | ⚠️ Not Finished | ❌ Needs Tests      |
-| Active or Passive  | ❌ Not Started  | ❌ Needs Tests      |
+| Active or Passive  | ⚠️ Not Finished | ❌ Needs Tests      |
 | Zoom Scaling Fix   | ✅ Complete     | ❌ Needs Tests      |
 | Grid System        | ✅ Complete     | ⚠️ Partial Coverage |
 | Mobile Support     | ⚠️ Not Finished | ⚠️ Partial Coverage |
@@ -59,4 +75,4 @@ Legend:
 - ⚠️ Not Finished/Partial Coverage
 - ❌ Not Started/Needs Tests
 
-# Happy to merge any PRs!
+# Happy to merge any PRs
